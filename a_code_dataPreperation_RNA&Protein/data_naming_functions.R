@@ -70,8 +70,9 @@ pick_data_n<-function(dataType,initialValue){
   objectName=c(initial=initialValue, pick_data=dataType)
   
   oldLocation<-getwd()
-  newLocation<-paste0(gsub('ecoli_learning_bacterial_response/.*', '' , oldLocation),
-                      "ecoli_learning_bacterial_response/a_code_dataPreperation_RNA&Protein")
+  newLocation<-paste0(gsub('/ecoli_learning_bacterial_response_optimization*.*', '' , oldLocation),
+                      "/ecoli_learning_bacterial_response_optimization/a_code_dataPreperation_RNA&Protein")
+  print(newLocation)
   setwd(newLocation)
   
   if(dataType %in% c("rna","mrna"))
