@@ -92,8 +92,6 @@ fig01<-ggplot(result_ListSum, aes( y=conditionInvestigated,x= predictedValue))+
   theme_bw()+
   theme( panel.grid.major = element_blank(),
          panel.grid.minor = element_blank(),
-         axis.title.x = element_blank(),
-         axis.title.y=element_blank(),
          axis.text.x=element_text(size=0),
          axis.text.y=element_blank(),
          axis.title.x=element_text(size=16),
@@ -117,8 +115,6 @@ fig02<-ggplot(result_ListSum, aes( y=conditionInvestigated,x= predictedValue))+
   #ggtitle("mRNA PCoA D12 AllPhase")+
   theme( panel.grid.major = element_blank(),
          panel.grid.minor = element_blank(),
-         axis.title.x = element_text(size=0),
-         axis.title.y=element_blank(),
          axis.text.x=element_text(size=16,angle = 90, hjust = 1),
          axis.text.y=element_text(size=16),
          axis.title.x=element_text(size=16),
@@ -289,7 +285,7 @@ score<-(trace-100)/((numDistictConditions-1)*100)
 dataInfo$score<-score
 ###*****************************
 
-
+doNotSave=1
 if(! exists("doNotSave"))
 {
   ###*****************************

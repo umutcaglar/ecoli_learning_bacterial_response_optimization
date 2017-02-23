@@ -31,8 +31,9 @@ set.seed(14159)
 ###*****************************
 # Set Working Directory
 # One needs to arrange the correct pathway if this is not umut's computer ;)
-if(as.vector(Sys.info()["effective_user"]=="umut"))
-{setwd(paste0("/Users/umut/GitHub/ecoli_learning_bacterial_response_optimization/b_code_MLRN/"))} # mac computer
+#if(as.vector(Sys.info()["effective_user"]=="umut"))
+#{setwd(paste0("/Users/umut/GitHub/ecoli_learning_bacterial_response_optimization/b_code_MLRN/"))} # mac computer
+setwd("/home1/03221/ucaglar/ecoli_learning_bacterial_response_optimization/b_code_MLRN")
 ###*****************************
 
 
@@ -55,7 +56,6 @@ require("ape") # for pcoa (# the "pcoa" function)
 require("vegan") # for pcoa (# the "vegdist" function)
 require("e1071") # for svm
 require("MASS") # to find matrix inverses
-require("randomForest") # for the random forest
 
 # Batch Correction
 require("sva") # only for machine learning
@@ -78,6 +78,8 @@ source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")
 
 
 ###*****************************
+setwd("/scratch/03221/ucaglar/ecoli_learning_bacterial_response_optimization/a_results/")
+
 # Find the csv files that need to be imported
 dataName=name_data(initialValue=c("resDf"), # can be c("genes0.05","genes_P0.05Fold2","resDf")
                    dataType = "mrna", 
@@ -112,6 +114,7 @@ dataName=name_data(initialValue=c("resDf"), # can be c("genes0.05","genes_P0.05F
                    normalizationMethodChoice= "vst", # can be "vst", "rlog", "log10", "noNorm"
                    test_for = "noTest")  # works only if normalizationMethodChoice == noNorm
 # c("Mg_mM_Levels", "Na_mM_Levels", "growthPhase", "carbonSource", "noTest")
+
 dataNameDF=as.data.frame(dataName[1])
 
 metaDataName=dataNameDF
@@ -122,19 +125,20 @@ metaDataName=paste(metaDataName,collapse = "_")
 
 mainDataFrame=read.csv(file = paste0("../a_results/",dataName,".csv"),header = TRUE,row.names = 1)
 condition=read.csv(file = paste0("../a_results/",metaDataName,".csv"),header = TRUE)
+
+setwd("/home1/03221/ucaglar/ecoli_learning_bacterial_response_optimization/b_code_MLRN")
 ###*****************************
 
 
 ###*****************************
 # Trial Reletad Parameters
-#dimensionChoice=11
 numRepeatsFor_TestTrainSubset_Choice=10 #how many times will I divide the data as train&tune vs test
 percentTest=.20 #Should be a number between 0-1
 # sum of percentTest and percentTune shoul not be smaller than 1
 testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase") # different combinations that we will look into 
 # Options carbonSource, growthPhase, Mg_mM_Levels, Na_mM_Levels
-dimReductionType="PCA" # Can be PCA, PCoA, noReduction
-dimensionChoiceValue=200 # does not work with dimReductionType="noReduction"
+dimReductionType="PCA" # Can be PCA or PCoA
+dimensionChoiceValue=20
 
 batchCorrectionMethod<-"fSVA"
 classWeightInputType="on SVA" # for probabilistic it should be after SVA
@@ -145,7 +149,7 @@ type_svmChoice="C-classification" #Can be "C-classification" but not "eps-regres
 #kernel_typeChoice="radial"
 
 # SVM tune paramteres
-crossValue=5;
+crossValue=10;
 nrepeatValue=1;
 samplingValue="cross"
 

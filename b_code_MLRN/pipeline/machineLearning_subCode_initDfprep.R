@@ -189,3 +189,33 @@ inputMetaDf %>%
                 -doublingTimeMinutes.95m, -doublingTimeMinutes_95p, -rSquared, -cellTotal,
                 -cellsPerTube)->inputMetaDf
 ###*****************************
+
+
+###*****************************
+# Hand Made Error Function
+F1ScoreErr<-function(y,prediction)
+{
+  a=as.vector(y); b=as.vector(prediction)
+  
+  inputs=sort(unique(a))
+  
+  for (counter04 in 1:length(inputs))
+  {
+    testFor=inputs[counter04]
+    
+    sum(a==testFor & b==testFor)->TP
+    sum(a!=testFor & b==testFor)->FP
+    sum(a==testFor & b!=testFor)->FN
+    
+    if(counter04==1)
+    {F1=(2*TP)/(2*TP+FP+FN)}
+    if(counter04!=1)
+    {F1[counter04]=(2*TP)/(2*TP+FP+FN)}
+  }
+  
+  F1_err=-mean(F1)+1
+  return(F1_err)
+}
+
+sourceCpp("pipeline/f1ScoreFunction.cpp")
+###*****************************

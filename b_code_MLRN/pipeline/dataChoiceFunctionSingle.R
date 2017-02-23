@@ -7,7 +7,7 @@
 
 
 ###*****************************
-trialStructure <- function(inputDf,percentTest){
+divisionForTest <- function(inputDf,percentTest){
   
   
   # Add Additional Column
@@ -36,17 +36,30 @@ trialStructure <- function(inputDf,percentTest){
     dplyr::sample_frac(size = percentTest, replace= FALSE)->inputDf_Test
   
   inputDf %>%
-    dplyr::mutate(train_test = ifelse(sampleNum_1_n %in% inputDf_Test$sampleNum_1_n, 
-                                      "test", "train"))->inputDf
+    dplyr::mutate(traintune_test = ifelse(sampleNum_1_n %in% inputDf_Test$sampleNum_1_n, 
+                                      "test", "train&tune"))->inputDf
   
   inputDf %>%
-    dplyr::filter(train_test=="train")->inputDf_Train
+    dplyr::filter(traintune_test=="train&tune")->inputDf_TrainTune
   ###*****************************
   
   
   ###*****************************
   return(list(inputDf_Test=inputDf_Test,
-              inputDf_Train=inputDf_Train))
+              inputDf_TrainTune=inputDf_TrainTune))
+  ###*****************************
+}
+###*****************************
+
+
+###*****************************
+divisionForTune <- function(inputDf,percentTune)
+{
+  
+  
+  ###*****************************
+  return(list(inputDf_Train=inputDf_Train,
+              inputDf_Tune=inputDf_Train))
   ###*****************************
 }
 ###*****************************

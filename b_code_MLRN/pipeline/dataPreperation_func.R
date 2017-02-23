@@ -8,12 +8,13 @@ dataPrepearningFunction<-function(meta_df_Train, meta_df_Test, trainDataFrame, t
   # 3.) remove same genes from test set data
   # 4.) transpose the data frame
   
+  
   # 1. correcting batch effects
   batchCorrDFs=batchCorrectSva(trainDataFrame_ = trainDataFrame,
                                meta_df_Train_ = meta_df_Train,
                                testDataFrame_ = testDataFrame,
                                dataNameDF_ = dataNameDF)
-
+  
   trainDataFrame = batchCorrDFs$trainDataFrame
   testDataFrame = batchCorrDFs$testDataFrame
   
@@ -27,33 +28,44 @@ dataPrepearningFunction<-function(meta_df_Train, meta_df_Test, trainDataFrame, t
   testDataFrame=t(testDataFrame)
   ###*****************************
   
-
-  ###*****************************
-  # Do PCA or PCoA
-  if(dimReductionType=="PCA") 
-  {mapped_DF_Objs=pca_analyze(train_set=trainDataFrame, 
-                              train_condition=meta_df_Train, 
-                              test_set=testDataFrame, 
-                              test_condition=meta_df_Test)}
   
-  mapped_train_DF=mapped_DF_Objs$train_set_PCs_comb
-  mapped_test_DF=mapped_DF_Objs$test_set_PCs_comb
+  ###*****************************
+  # Do PCA, PCoA, or noReduction
+  if(dimReductionType=="PCA") 
+  {
+    mapped_DF_Objs=pca_analyze(train_set=trainDataFrame, 
+                               train_condition=meta_df_Train, 
+                               test_set=testDataFrame, 
+                               test_condition=meta_df_Test)
+    
+    mapped_train_DF=mapped_DF_Objs$train_set_PCs_comb
+    mapped_test_DF=mapped_DF_Objs$test_set_PCs_comb
+  }
   # if(dimReductionType=="PCoA") 
   #   {mapped_DF=pcoa_analyze(mainDataFrame, inputMetaDf)}
+  
+  if(dimReductionType=="noReduction") 
+  {
+    mapped_train_DF = trainDataFrame
+    mapped_test_DF = testDataFrame
+    dimensionChoiceValue=nrow(trainDataFrame)
+  }
   ###*****************************
   
   
   ###*****************************
   # Calculate Dimension Choice Automatically
-  dimensionChoice=round(sqrt(nrow(meta_df_Train)))
+  #dimensionChoice=round(sqrt(nrow(meta_df_Train)))
+  dimensionChoice=dimensionChoiceValue
   ###*****************************
   
   
   ###*****************************
   # Pick # of dimensions that needs to go into machine learning algorithm
-  
+
   # generate the list of dimensions that will be selected from df by using dplyr::select
-  selectList=c("conditionInvestigated",paste0("Axis.",seq(1,dimensionChoice))) 
+  selectList=c("conditionInvestigated",paste0("Axis.",seq(1,dimensionChoice)))
+  selectList=intersect(selectList, colnames(mapped_train_DF))
   
   # selection of wanted dimensions with dplyr::select for "mapped_train_DF" and "mapped_test_DF"
   mapped_train_DF %>% 
