@@ -213,7 +213,7 @@ F1ScoreErr<-function(y,prediction)
     {F1[counter04]=(2*TP)/(2*TP+FP+FN)}
   }
   
-  F1_err=-mean(F1)+1
+  F1_err=1-mean(F1)
   return(F1_err)
 }
 

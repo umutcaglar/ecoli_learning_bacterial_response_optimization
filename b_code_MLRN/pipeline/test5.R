@@ -63,6 +63,7 @@ tuneObj<-e1071::tune(method = svm,
 ###*****************************
 
 
-
+ggplot2::ggplot(performanceDf,aes(x=log10(gamma),y=log10(cost),color=error))+
+  geom_point(size=3)
 
 

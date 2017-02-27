@@ -56,12 +56,17 @@ require("vegan") # for pcoa (# the "vegdist" function)
 require("e1071") # for svm
 require("MASS") # to find matrix inverses
 require("randomForest") # for the random forest
+require("Rcpp")
 
 # Batch Correction
 require("sva") # only for machine learning
 
 # Text manipulation
 require("stringr")
+
+# Parallel
+require(doMC)
+require(foreach)
 ###*****************************
 
 
@@ -75,6 +80,19 @@ source("pipeline/dataPreperation_func.R")
 source("../a_code_dataPreperation_RNA&Protein/data_naming_functions.R")
 source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")	
 ###*****************************
+
+
+#********************************************
+# ARRANGE BACKENDS
+## use the multicore library
+# a.
+ProcCount <- 6 # registers specified number of workers  or
+registerDoMC(ProcCount) # Or, reserve all all available cores
+# b.
+#registerDoMC()  # Automatically assign cores
+
+getDoParWorkers() # check how many cores (workers) are registered
+#********************************************
 
 
 ###*****************************
@@ -128,13 +146,13 @@ condition=read.csv(file = paste0("../a_results/",metaDataName,".csv"),header = T
 ###*****************************
 # Trial Reletad Parameters
 #dimensionChoice=11
-numRepeatsFor_TestTrainSubset_Choice=10 #how many times will I divide the data as train&tune vs test
+numRepeatsFor_TestTrainSubset_Choice=12 #how many times will I divide the data as train&tune vs test
 percentTest=.20 #Should be a number between 0-1
 # sum of percentTest and percentTune shoul not be smaller than 1
 testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase") # different combinations that we will look into 
 # Options carbonSource, growthPhase, Mg_mM_Levels, Na_mM_Levels
 dimReductionType="PCA" # Can be PCA, PCoA, noReduction
-dimensionChoiceValue=200 # does not work with dimReductionType="noReduction"
+dimensionChoiceValue=10 # does not work with dimReductionType="noReduction"
 
 batchCorrectionMethod<-"fSVA"
 classWeightInputType="on SVA" # for probabilistic it should be after SVA
@@ -145,9 +163,17 @@ type_svmChoice="C-classification" #Can be "C-classification" but not "eps-regres
 #kernel_typeChoice="radial"
 
 # SVM tune paramteres
-crossValue=5;
+crossValue=10;
 nrepeatValue=1;
 samplingValue="cross"
+
+# Parameter Span
+powerRangeGammaLow=-2 # the span of parameters 2 means data will span 10^-2 to 10^2
+powerRangeGammaHigh=2 # the span of parameters 2 means data will span 10^-2 to 10^2
+powerRangeCostLow=-2 # the span of parameters 2 means data will span 10^-2 to 10^2
+powerRangeCostHigh=2 # the span of parameters 2 means data will span 10^-2 to 10^2
+ndivision=10 # number of division points within the interval (if 5 we will have 10^-2, 10^-1, 10^0, 10^1, 10^2)
+kernelList=c("linear","radial","sigmoid") # kernel vector
 
 # combined set related variables
 batchCorrectionType="separate" # can be together or separate for joined datasets
@@ -160,8 +186,7 @@ tuning = TRUE
 if(type_svmChoice == "C-classification"){tuning==TRUE}
 
 # parallel processing
-parallel_com = FALSE
-numCore = 1
+parallel_com = TRUE
 if(type_svmChoice == "C-classification"){parallel_com = FALSE}
 if(parallel_com == FALSE){numCore = 1}
 ###*****************************

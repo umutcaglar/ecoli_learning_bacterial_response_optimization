@@ -5,11 +5,16 @@ source("pipeline/machineLearning_subCode_initDfprep.R")
 
 
 # --MAIN LOOP--
-###*****************************####
-counter03=0 # for division of the result frame to make the code more efficient
-for(counter01 in 1:numRepeatsFor_TestTrainSubset_Choice)
+# ###*****************************####
+# counter03=0 # for division of the result frame to make the code more efficient
+# tempmodelsvm_list=list()
+# #******************************************
+
+
+#******************************************
+# --MAIN LOOP-- do the parallel processing
+parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %dopar%
 {
-  ###*****************************
   # Find out data sets that will go into machine learning algorithm
   output<-divisionForTest(inputMetaDf,percentTest)
   
@@ -39,180 +44,67 @@ for(counter01 in 1:numRepeatsFor_TestTrainSubset_Choice)
                                               dataNameDF = dataNameDF, 
                                               dimReductionType = dimReductionType)
   
-  dim_reduced_traintune_DF_long = dim_reduced_DF_obj$dim_reduced_train_DF
-  dim_reduced_test_DF_long = dim_reduced_DF_obj$dim_reduced_test_DF
-  dimensionChoice_long = dim_reduced_DF_obj$dimensionChoice
+  dim_reduced_traintune_DF = dim_reduced_DF_obj$dim_reduced_train_DF
+  dim_reduced_test_DF = dim_reduced_DF_obj$dim_reduced_test_DF
+  dimensionChoice = dim_reduced_DF_obj$dimensionChoice
   ###***************************** 
-  browser()
+  
   
   ###*****************************
-  # Preperation for while loop to pick the best performing axis
-  listGamma=0
-  listCost=0
-  listKernel=""
-  listPerformance=0
-  listModel=list("null")
+  # Generate Class Weight Vector
+  meta_df_TrainTune %>%
+    dplyr::group_by(conditionInvestigated)%>%
+    dplyr::summarize(samSize=length(conditionInvestigated))->classWeightDf
+  
+  classWeightVector<-as.vector(sum(classWeightDf$samSize)/classWeightDf$samSize)
+  names(classWeightVector)<-classWeightDf$conditionInvestigated
+  classWeightVectorRForest=classWeightVector/sum(classWeightVector)
+  ###*****************************
   
   
-  listAxis=0
-  listScore=0
-  lastScore=0
-  counter02a=1
+  # Generate Gamma Cost and kernel vectors
+  ###*****************************
+  # gamma vector
+  gammaList=10^seq(from=log10(1/dimensionChoice)+powerRangeGammaLow,
+                   to=log10(1/dimensionChoice)+powerRangeGammaHigh,
+                   length.out = ndivision)
+  # cost vector
+  costList=10^seq(from=powerRangeCostLow,
+                  to=powerRangeCostHigh,
+                  length.out = ndivision)
+  ###*****************************
+  
+
+  ###*****************************
+  # tune svm for gamma, cost, kernel
+  tuneObj<-e1071::tune(method = svm,
+                       conditionInvestigated~.,
+                       data = dim_reduced_traintune_DF,
+                       type = type_svmChoice,
+                       class.weights = classWeightVector,
+                       ranges = list(gamma = gammaList, cost =costList, kernel = kernelList),
+                       tunecontrol = tune.control(best.model = TRUE,
+                                                  performances = TRUE,
+                                                  sampling=samplingValue,
+                                                  cross=crossValue,
+                                                  nrepeat = nrepeatValue,
+                                                  error.fun = F1ScoreErrCpp))
+  ###*****************************
   
   
-  # ---START OF THE WHILE LOOP ---
-  while(counter02a==1|listScore[counter02a]>lastScore)
-  {
-    
-    loopGamma=rep(x = 0,dimensionChoiceValue)
-    loopCost=rep(x = 0,dimensionChoiceValue)
-    loopKernel=rep(x = "",dimensionChoiceValue)
-    loopScore=rep(x = 0,dimensionChoiceValue)
-    loopModelSVM=list()
-    
-    for(counter02b in 1:dimensionChoiceValue)
-    {
-      if(any(listAxis==counter02b))
-      {
-        loopModelSVM[counter02b]<-NA
-        loopGamma[counter02b]=NA
-        loopCost[counter02b]=NA
-        loopKernel[counter02b]=NA
-        loopScore[counter02b]= NA
-      }
-      
-      if(!any(listAxis==counter02b))
-      {
-        ###*****************************
-        # Re filter the Axises
-        if(length(listAxis)==1){chosenAxis=paste0("Axis.",counter02b)}
-        if(length(listAxis)!=1){chosenAxis=paste0("Axis.",c(listAxis[2:length(listAxis)],counter02b))}
-        
-        dim_reduced_traintune_DF_long %>%
-          dplyr::select(one_of(c("conditionInvestigated",chosenAxis)))->dim_reduced_traintune_DF
-        dim_reduced_test_DF_long %>%
-          dplyr::select(one_of(chosenAxis))->dim_reduced_test_DF
-        dimensionChoice=length(listAxis)
-        ###*****************************
-        browser()
-        
-        # SVM
-        ###*****************************
-        # Generate Class Weight Vector
-        meta_df_TrainTune %>%
-          dplyr::group_by(conditionInvestigated)%>%
-          dplyr::summarize(samSize=length(conditionInvestigated))->classWeightDf
-        
-        classWeightVector<-as.vector(sum(classWeightDf$samSize)/classWeightDf$samSize)
-        names(classWeightVector)<-classWeightDf$conditionInvestigated
-        classWeightVectorRForest=classWeightVector/sum(classWeightVector)
-        ###*****************************
-        
-        
-        # Generate Gamma Cost and kernel vectors
-        ###*****************************
-        # gamma vector
-        gammaList=10^seq(from=log10(1/dimensionChoice)-3,
-                         to=log10(1/dimensionChoice)+3,
-                         length.out = 5)
-        # cost vector
-        costList=10^seq(from=-3,
-                        to=3,
-                        length.out = 5)
-        
-        # kernel vector
-        kernelList=c("linear","radial","sigmoid")
-        ###*****************************
-        
-        
-        ###*****************************
-        # tune svm for gamma, cost, kerne
-        tuneObj<-e1071::tune(method = svm,
-                             conditionInvestigated~.,
-                             data = dim_reduced_traintune_DF,
-                             type = type_svmChoice,
-                             class.weights = classWeightVector,
-                             ranges = list(gamma = gammaList, cost =costList, kernel = kernelList),
-                             tunecontrol = tune.control(best.model = TRUE,
-                                                        performances = FALSE,
-                                                        sampling=samplingValue,
-                                                        cross=crossValue,
-                                                        nrepeat = nrepeatValue,
-                                                        error.fun = F1ScoreErr))
-        ###*****************************
-        
-        
-        ###*****************************
-        # Extract results from them
-        loopModelSVM[[counter02b]]<-tuneObj$best.model
-        
-        loopGamma[counter02b]=tuneObj$best.parameters$gamma
-        loopCost[counter02b]=tuneObj$best.parameters$cost
-        loopKernel[counter02b]=as.vector(tuneObj$best.parameters$kernel)
-        
-        performance=1-tuneObj$best.performance
-        loopScore[counter02b]= performance
-        ###*****************************
-        
-        browser()
-        # random forest
-        # random forest sample
-        q<-randomForest::randomForest(conditionInvestigated~.,
-                                      data = dim_reduced_traintune_DF, 
-                                      importance=TRUE,
-                                      do.trace=100,
-                                      classwt=classWeightVectorRForest,
-                                      nPerm=5,
-                                      ntree=50000,
-                                      mtry=5)
-        q1<-q$confusion; View(q1); q1<-as.data.frame(q1); 
-        
-        colnamesList=colnames(q1)
-        colnamesList<-colnamesList[1:16]
-        
-        q1 %>%
-          dplyr::select(-class.error)%>%
-          tibble::rownames_to_column(var = "y")%>%
-          tidyr::gather(key = prediction, value = repeatTime, -y)
-        
-        
-        # ###*****************************
-        # e1071::tune.randomForest(method = randomForest, 
-        #                          conditionInvestigated~.,
-        #                          data = dim_reduced_traintune_DF)
-        # ###*****************************
-        
-      }
-      print(counter02b)
-    }
-    
-    chosenAxis=which(loopScore==max(loopScore,na.rm = T))
-    listAxis[counter02a+1]=chosenAxis
-    listScore[counter02a+1]=max(loopScore,na.rm = T)
-    
-    listGamma[counter02a+1] = loopGamma[chosenAxis]
-    listCost[counter02a+1] = loopCost[chosenAxis]
-    listKernel[counter02a+1] = loopKernel[chosenAxis]
-    listModel[[counter02a+1]] = loopModelSVM[[chosenAxis]]
-    
-    lastScore=listScore[counter02a]
-    
-    counter02a=counter02a+1
-    
-    print(sort(listAxis))
-    print(listScore)
-  }
-  # ---END OF THE WHILE LOOP ---
-  axisList=listAxis[1:length(listAxis)-1]
-  gamma = listGamma[length(listGamma)-1]
-  cost = listCost[length(listCost)-1]
-  kernel = listKernel[length(listKernel)-1]
-  modelSVM = listModel[[length(listModel)-1]]
-  performance = listScore[length(listScore)-1]
+  ###*****************************
+  # extracting parameters
+  modelSVM<-tuneObj$best.model
+  gamma=tuneObj$best.parameters$gamma
+  cost=tuneObj$best.parameters$cost
+  kernel=as.vector(tuneObj$best.parameters$kernel)
+  performance=1-tuneObj$best.performance
+  performanceDf=dplyr::mutate(as.data.frame(tuneObj$performances),runNum=counter01)
+  ###*****************************
   
-  browser()
   
-  axisWeights=listScore[1:(length(listCost)-1)]-c(0,listScore[1:(length(listCost)-2)])
+  
+  
   ###*****************************
   # making predictions with best model
   modelSVM %>%
@@ -225,69 +117,88 @@ for(counter01 in 1:numRepeatsFor_TestTrainSubset_Choice)
     dplyr::mutate(gamma=gamma) %>%
     dplyr::mutate(cost=cost) %>%
     dplyr::mutate(kernel=kernel) %>%
-    dplyr::mutate(performance=performance) %>%
-    dplyr::mutate(axisList=paste(axisList,collapse = "_")) %>%
-    dplyr::mutate(axisWeight=paste(round(axisWeights,3),collapse = "_"))->result_i
+    dplyr::mutate(performance=performance) -> result_i
   ###*****************************
   
+  
+  ###*****************************
   print(paste0("c :",cost,
                " gamma :", gamma,
                " kernel :", kernel,
                " performance :", performance))
-  
-  ###*****************************
-  # the main time consuming part is the addition of multiple results together
-  # to solve this problem 
-  # I divide final list into small peaces
-  if(counter01%%100==1)
-  {
-    tempList=result_i
-  }
-  
-  if(counter01%%100!=1 & counter01%%100!=100)
-  {
-    tempList=dplyr::rbind_list(tempList,result_i)
-  }
-  
-  if(counter01%%100==0)
-  {
-    counter03=counter03+1
-    assign(sprintf("tempList%03d", counter03),tempList)
-    remove(tempList)
-  }
   ###*****************************
   
-  print(paste0("Counter01: ",counter01, "/", numRepeatsFor_TestTrainSubset_Choice))
+  browser()
+  
+  
+  # # Not parallel comnine of results
+  # ###*****************************
+  # # the main time consuming part is the addition of multiple results together
+  # # to solve this problem 
+  # # I divide final list into small peaces
+  # if(counter01%%100==1)
+  # {
+  #   tempResultList=result_i
+  #   tempPerformanceDfComb=performanceDf
+  #   tempmodelsvm_list[[counter01]]<-modelSVM
+  # }
+  # 
+  # if(counter01%%100!=1 & counter01%%100!=100)
+  # {
+  #   tempResultList=dplyr::rbind_list(tempResultList,result_i)
+  #   tempPerformanceDfComb=dplyr::rbind_list(tempPerformanceDfComb,performanceDf)
+  #   tempmodelsvm_list[[counter01]]<-modelSVM
+  # }
+  # 
+  # if(counter01%%100==0)
+  # {
+  #   counter03=counter03+1
+  #   assign(sprintf("tempResultList%03d", counter03),tempResultList)
+  #   assign(sprintf("tempPerformanceDfComb%03d", counter03),tempPerformanceDfComb)
+  #   assign(sprintf("tempmodelsvm_list%03d", counter03),tempmodelsvm_list)
+  #   remove(tempResultList, tempPerformanceDfComb, tempmodelsvm_list)
+  # }
+  # ###*****************************
+  
+  # #print(paste0("Counter01: ",counter01, "/", numRepeatsFor_TestTrainSubset_Choice))
+  
+  # Parallel Way of combining data
+  #******************************************
+  # generate the list for output
+  list(resultList=result_i,
+       performanceDf=performanceDf,
+       modelsvm=modelSVM)
+  #******************************************
 }
 ###*****************************####
 # --END OF MAIN LOOP--
 
-
-# --RE ORGANIZING OUTPUT OF LOOP-- ####
-###*****************************
-# Combining Peaces
-result_List=dplyr::rbind_all(mget(grep("tempList*.*",ls(),value = TRUE)))
-remove(list = (grep("tempList*.*",ls(),value = TRUE)))
-###*****************************
-
-
-###*****************************
-# Calculating Percentages for predictions and generate summary df.
-result_List %>%
-  dplyr::group_by(conditionInvestigated) %>%
-  dplyr::summarise(conditionLength=length(conditionInvestigated)) %>%
-  dplyr::left_join(result_List, .)->result_List
-
-
-result_List %>%
-  dplyr::group_by(conditionInvestigated,predictedValue) %>%
-  dplyr::summarise(combinationLength=length(conditionInvestigated),
-                   conditionLength=unique(conditionLength),
-                   percentPrediction=100*combinationLength/conditionLength)->result_ListSum
-###*****************************####
-
-
-# Figures and save
-###*****************************####
-source("pipeline/machineLearning_subCode_figure_save.R")
-###*****************************
+# 
+# # --RE ORGANIZING OUTPUT OF LOOP-- ####
+# ###*****************************
+# # Combining Peaces
+# result_List=dplyr::rbind_all(mget(grep("tempResultList*.*",ls(),value = TRUE)))
+# remove(list = (grep("tempResultList*.*",ls(),value = TRUE)))
+# ###*****************************
+# 
+# 
+# ###*****************************
+# # Calculating Percentages for predictions and generate summary df.
+# result_List %>%
+#   dplyr::group_by(conditionInvestigated) %>%
+#   dplyr::summarise(conditionLength=length(conditionInvestigated)) %>%
+#   dplyr::left_join(result_List, .)->result_List
+# 
+# 
+# result_List %>%
+#   dplyr::group_by(conditionInvestigated,predictedValue) %>%
+#   dplyr::summarise(combinationLength=length(conditionInvestigated),
+#                    conditionLength=unique(conditionLength),
+#                    percentPrediction=100*combinationLength/conditionLength)->result_ListSum
+# ###*****************************####
+# 
+# 
+# # Figures and save
+# ###*****************************####
+# source("pipeline/machineLearning_subCode_figure_save.R")
+# ###*****************************
