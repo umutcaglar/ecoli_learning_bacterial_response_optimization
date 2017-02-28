@@ -66,8 +66,8 @@ require("sva") # only for machine learning
 require("stringr")
 
 # Parallel
-require(doMC)
-require(foreach)
+require("doMC")
+require("foreach")
 ###*****************************
 
 
@@ -147,7 +147,7 @@ condition=read.csv(file = paste0("../a_results/",metaDataName,".csv"),header = T
 ###*****************************
 # Trial Reletad Parameters
 #dimensionChoice=11
-numRepeatsFor_TestTrainSubset_Choice=12 #how many times will I divide the data as train&tune vs test
+numRepeatsFor_TestTrainSubset_Choice=60 #how many times will I divide the data as train&tune vs test
 percentTest=.20 #Should be a number between 0-1
 # sum of percentTest and percentTune shoul not be smaller than 1
 testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase") # different combinations that we will look into 
@@ -173,7 +173,7 @@ powerRangeGammaLow=-2 # the span of parameters 2 means data will span 10^-2 to 1
 powerRangeGammaHigh=2 # the span of parameters 2 means data will span 10^-2 to 10^2
 powerRangeCostLow=-2 # the span of parameters 2 means data will span 10^-2 to 10^2
 powerRangeCostHigh=2 # the span of parameters 2 means data will span 10^-2 to 10^2
-ndivision=10 # number of division points within the interval (if 5 we will have 10^-2, 10^-1, 10^0, 10^1, 10^2)
+ndivision=25 # number of division points within the interval (if 5 we will have 10^-2, 10^-1, 10^0, 10^1, 10^2)
 kernelList=c("linear","radial","sigmoid") # kernel vector
 
 # combined set related variables

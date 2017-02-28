@@ -141,5 +141,18 @@ source("pipeline/timeStamp.R")
 
 
 #******************************************
-# Save the file
+# Save the files
+# a) save the loops output object (that includes predictions best parameters and parameter distributions)
+save(list = c("timeStampVector","parallel_Result",
+              "factorOrder","factorOrder_Short",
+              "expandedGrid","expandedGrid_Short",
+              "vectorList","vectorList_Short",
+              "testConditions","inputMetaDf"), 
+     file = paste0("../b_results/",fileName,".Rda"), compress = "xz")
+
+# b) save the conditions to csv file
+timeStampFileOld<-read.csv(file = paste0("../b_results/","parametersCombined",".csv")) #import old file
+timeStampFileNew<-dplyr::bind_rows(timeStampFileOld,timeStampVector) # add new line
+timeStampFileNew<-unique(timeStampFileNew) # remove duplicates
+write.csv(x=timeStampFileNew, file=paste0("../b_results/","parametersCombined",".csv"),row.names = FALSE)
 #******************************************
