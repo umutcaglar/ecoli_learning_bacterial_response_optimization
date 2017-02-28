@@ -24,7 +24,8 @@
 rm(list = ls())
 if (is.integer(dev.list())){dev.off()}
 cat("\014")
-set.seed(14159)
+seedNo=14159
+set.seed(seedNo)
 ###*****************************
 
 
@@ -183,14 +184,10 @@ if(!(grepl(pattern = "mrna",x = dataNameDF$objectName.pick_data) &
 
 # arrange tuning
 tuning = TRUE
-if(type_svmChoice == "C-classification"){tuning==TRUE}
 
 # parallel processing
 parallel_com = TRUE
-if(type_svmChoice == "C-classification"){parallel_com = FALSE}
-if(parallel_com == FALSE){numCore = 1}
 ###*****************************
-
 
 
 ###*****************************

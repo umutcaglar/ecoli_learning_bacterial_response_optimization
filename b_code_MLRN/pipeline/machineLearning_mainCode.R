@@ -121,47 +121,6 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   ###*****************************
   
   
-  ###*****************************
-  print(paste0("c :",cost,
-               " gamma :", gamma,
-               " kernel :", kernel,
-               " performance :", performance))
-  ###*****************************
-  
-  browser()
-  
-  
-  # # Not parallel comnine of results
-  # ###*****************************
-  # # the main time consuming part is the addition of multiple results together
-  # # to solve this problem 
-  # # I divide final list into small peaces
-  # if(counter01%%100==1)
-  # {
-  #   tempResultList=result_i
-  #   tempPerformanceDfComb=performanceDf
-  #   tempmodelsvm_list[[counter01]]<-modelSVM
-  # }
-  # 
-  # if(counter01%%100!=1 & counter01%%100!=100)
-  # {
-  #   tempResultList=dplyr::rbind_list(tempResultList,result_i)
-  #   tempPerformanceDfComb=dplyr::rbind_list(tempPerformanceDfComb,performanceDf)
-  #   tempmodelsvm_list[[counter01]]<-modelSVM
-  # }
-  # 
-  # if(counter01%%100==0)
-  # {
-  #   counter03=counter03+1
-  #   assign(sprintf("tempResultList%03d", counter03),tempResultList)
-  #   assign(sprintf("tempPerformanceDfComb%03d", counter03),tempPerformanceDfComb)
-  #   assign(sprintf("tempmodelsvm_list%03d", counter03),tempmodelsvm_list)
-  #   remove(tempResultList, tempPerformanceDfComb, tempmodelsvm_list)
-  # }
-  # ###*****************************
-  
-  # #print(paste0("Counter01: ",counter01, "/", numRepeatsFor_TestTrainSubset_Choice))
-  
   # Parallel Way of combining data
   #******************************************
   # generate the list for output
@@ -173,32 +132,14 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
 ###*****************************####
 # --END OF MAIN LOOP--
 
-# 
-# # --RE ORGANIZING OUTPUT OF LOOP-- ####
-# ###*****************************
-# # Combining Peaces
-# result_List=dplyr::rbind_all(mget(grep("tempResultList*.*",ls(),value = TRUE)))
-# remove(list = (grep("tempResultList*.*",ls(),value = TRUE)))
-# ###*****************************
-# 
-# 
-# ###*****************************
-# # Calculating Percentages for predictions and generate summary df.
-# result_List %>%
-#   dplyr::group_by(conditionInvestigated) %>%
-#   dplyr::summarise(conditionLength=length(conditionInvestigated)) %>%
-#   dplyr::left_join(result_List, .)->result_List
-# 
-# 
-# result_List %>%
-#   dplyr::group_by(conditionInvestigated,predictedValue) %>%
-#   dplyr::summarise(combinationLength=length(conditionInvestigated),
-#                    conditionLength=unique(conditionLength),
-#                    percentPrediction=100*combinationLength/conditionLength)->result_ListSum
-# ###*****************************####
-# 
-# 
-# # Figures and save
-# ###*****************************####
-# source("pipeline/machineLearning_subCode_figure_save.R")
-# ###*****************************
+
+
+#******************************************
+# Save the data
+source("pipeline/timeStamp.R")
+#******************************************
+
+
+#******************************************
+# Save the file
+#******************************************
