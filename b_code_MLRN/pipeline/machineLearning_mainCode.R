@@ -74,10 +74,10 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
                   length.out = ndivision)
   ###*****************************
   
-
+  
   ###*****************************
   # tune svm for gamma, cost, kernel
-  tuneObj<-e1071::tune(method = svm,
+  tuneObjSVM<-e1071::tune(method = svm,
                        conditionInvestigated~.,
                        data = dim_reduced_traintune_DF,
                        type = type_svmChoice,
@@ -94,15 +94,13 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   
   ###*****************************
   # extracting parameters
-  modelSVM<-tuneObj$best.model
-  gamma=tuneObj$best.parameters$gamma
-  cost=tuneObj$best.parameters$cost
-  kernel=as.vector(tuneObj$best.parameters$kernel)
-  performance=1-tuneObj$best.performance
-  performanceDf=dplyr::mutate(as.data.frame(tuneObj$performances),runNum=counter01)
+  modelSVM<-tuneObjSVM$best.model
+  gammaSVM=tuneObjSVM$best.parameters$gamma
+  costSVM=tuneObjSVM$best.parameters$cost
+  kernelSVM=as.vector(tuneObjSVM$best.parameters$kernel)
+  performanceSVM=1-tuneObjSVM$best.performance
+  performanceDfSVM=dplyr::mutate(as.data.frame(tuneObjSVM$performances),runNum=counter01)
   ###*****************************
-  
-  
   
   
   ###*****************************
@@ -114,19 +112,83 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::left_join(meta_df_Test,.) %>%
     dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
     dplyr::mutate(TestTrainSubsetNo=counter01) %>%
-    dplyr::mutate(gamma=gamma) %>%
-    dplyr::mutate(cost=cost) %>%
-    dplyr::mutate(kernel=kernel) %>%
-    dplyr::mutate(performance=performance) -> result_i
+    dplyr::mutate(gamma=gammaSVM) %>%
+    dplyr::mutate(cost=costSVM) %>%
+    dplyr::mutate(kernel=kernelSVM) %>%
+    dplyr::mutate(performance=performanceSVM) -> result_i_SVM
   ###*****************************
+  
+  
+  ###*****************************
+  counter02=0;
+  flag01=0
+  while(flag01 == 0 & counter02<=100){
+    counter02=counter02+1;
+    tuneObjRF<-try(e1071::tune.randomForest(x=dim_reduced_traintune_DF[-1], 
+                                            y=factor(dim_reduced_traintune_DF[[1]]), 
+                                            ntree= ntreelistRF,
+                                            mtry=mtrylistRF,
+                                            nodesize=nodesizelistRF,
+                                            tunecontrol = tune.control(best.model = TRUE,
+                                                                       performances = TRUE,
+                                                                       sampling=samplingValue,
+                                                                       cross=crossValue,
+                                                                       nrepeat = nrepeatValue,
+                                                                       error.fun = F1ScoreErrCpp)))
+    
+    print(paste0(counter02,"_",class(tuneObjRF)))
+    if(class(tuneObjRF)!="try-error"){flag01=1}
+  }
+  ###*****************************
+  
+  
+  ###*****************************
+  # extracting parameters
+  modelRF<-tuneObjRF$best.model
+  nodesizeRF<-tuneObjRF$best.parameters$nodesize
+  mtryRF<-tuneObjRF$best.parameters$mtry
+  ntreeRF<-as.vector(tuneObjRF$best.parameters$ntree)
+  performanceRF<-1-tuneObjRF$best.performance
+  performanceDfRF<-dplyr::mutate(as.data.frame(tuneObjRF$performances),runNum=counter01)
+  ###*****************************
+  
+  ###*****************************
+  # making predictions with best model
+  modelRF %>%
+    predict(.,dim_reduced_test_DF) %>%
+    data.frame(predictedValue = .) %>%
+    tibble::rownames_to_column(var = "dataSet") %>%
+    dplyr::left_join(meta_df_Test,.) %>%
+    dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
+    dplyr::mutate(TestTrainSubsetNo=counter01) %>%
+    dplyr::mutate(nodesize=nodesizeRF) %>%
+    dplyr::mutate(mtry=mtryRF) %>%
+    dplyr::mutate(ntree=ntreeRF) %>%
+    dplyr::mutate(performance=performanceRF) -> result_i_RF
+  ###*****************************
+  
+  
+  ###*****************************
+  # Make model RF Smaller (It can not make predictions anymore)
+  modelRF$forest$nodestatus<-NULL
+  modelRF$forest$bestvar<-NULL
+  modelRF$forest$treemap<-NULL
+  modelRF$forest$nodepred<-NULL
+  modelRF$forest$xbestsplit<-NULL
+  modelRF$forest$xlevels<-NULL
+  ###*****************************
+  
   
   
   # Parallel Way of combining data
   #******************************************
   # generate the list for output
-  list(resultList=result_i,
-       performanceDf=performanceDf,
-       modelsvm=modelSVM)
+  list(resultListSVM=result_i_SVM,
+       performanceDfSVM=performanceDfSVM,
+       #modelsvm=modelSVM,
+       #modelrf=modelRF,
+       resultListRF=result_i_RF,
+       performanceDfRF=performanceDfRF)
   #******************************************
 }
 ###*****************************####

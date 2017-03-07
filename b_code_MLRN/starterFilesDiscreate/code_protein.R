@@ -168,13 +168,18 @@ crossValue=10;
 nrepeatValue=1;
 samplingValue="cross"
 
-# Parameter Span
+# SVM parameter Span
 powerRangeGammaLow=-2 # the span of parameters 2 means data will span 10^-2 to 10^2
-powerRangeGammaHigh=2 # the span of parameters 2 means data will span 10^-2 to 10^2
+powerRangeGammaHigh=3 # the span of parameters 2 means data will span 10^-2 to 10^2
 powerRangeCostLow=-2 # the span of parameters 2 means data will span 10^-2 to 10^2
-powerRangeCostHigh=2 # the span of parameters 2 means data will span 10^-2 to 10^2
-ndivision=25 # number of division points within the interval (if 5 we will have 10^-2, 10^-1, 10^0, 10^1, 10^2)
+powerRangeCostHigh=3 # the span of parameters 2 means data will span 10^-2 to 10^2
+ndivision=31 # number of division points within the interval (if 5 we will have 10^-2, 10^-1, 10^0, 10^1, 10^2)
 kernelList=c("linear","radial","sigmoid") # kernel vector
+
+# RF Tune parameters
+ntreelistRF=c(1000, 5000, 10000)
+nodesizelistRF=c(1,2,3,4,5)
+mtrylistRF=c(3,4,5,6,7)
 
 # combined set related variables
 batchCorrectionType="separate" # can be together or separate for joined datasets

@@ -13,17 +13,23 @@ timeStampVector$classWeightInputType=classWeightInputType
 timeStampVector$similarDataClassifierForBatch=paste0(similarDataClassifierForBatch,collapse = "_")
 timeStampVector$type_svmChoice=type_svmChoice
 
+# SVM related parameters
 timeStampVector$crossValue=crossValue
 timeStampVector$nrepeatValue=nrepeatValue
 timeStampVector$samplingValue=samplingValue
 
-# Parameter Span
+# Parameter Span SVM
 timeStampVector$powerRangeGammaLow=powerRangeGammaLow
 timeStampVector$powerRangeGammaHigh=powerRangeGammaHigh
 timeStampVector$powerRangeCostLow=powerRangeCostLow
 timeStampVector$powerRangeCostHigh=powerRangeCostHigh
 timeStampVector$ndivision=ndivision
 timeStampVector$kernelList=paste0(kernelList,collapse = "_")
+
+# RF Related parameters
+timeStampVector$ntreelistRF=paste(ntreelistRF,collapse = "_")
+timeStampVector$nodesizelistRF=paste(nodesizelistRF,collapse = "_")
+timeStampVector$mtrylistRF=paste(mtrylistRF,collapse = "_")
 
 # combined set related variables
 timeStampVector$batchCorrectionType=batchCorrectionType

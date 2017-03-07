@@ -1,11 +1,11 @@
-#Initial DataFrame preperation
+#Initial DataFrame preperation v_new
 ###*****************************####
 source("pipeline/machineLearning_subCode_initDfprep.R")
 ###*****************************####
 
 
-
-###*****************************
+# --MAIN LOOP--
+# ###*****************************####
 # Divide main data frame into two parts
 mainDataFrame %>%
   tibble::rownames_to_column()%>%
@@ -19,168 +19,239 @@ mainDataFrame_mrna %>%
   tibble::column_to_rownames(df = ., var = "rowname")->mainDataFrame_mrna
 mainDataFrame_protein %>% 
   tibble::column_to_rownames(df = ., var = "rowname")->mainDataFrame_protein
-###*****************************
-set.seed(14159)
+# #******************************************
 
-# --MAIN LOOP--
-###*****************************####
-counter02=0 # for division of the result frame to make the code more efficient
-for(counter01 in 1:numRepeatsFor_TestTrainSubset_Choice)
+
+#******************************************
+# --MAIN LOOP-- do the parallel processing
+parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %dopar%
 {
-  ###*****************************
   # Find out data sets that will go into machine learning algorithm
-  output<-trialStructure(inputMetaDf,percentTest)
+  output<-divisionForTest(inputMetaDf,percentTest)
   
   meta_df_Test=output$inputDf_Test # represent the test set
-  meta_df_Train=output$inputDf_Train # represent the train set
+  meta_df_TrainTune=output$inputDf_Train # represent the train set
   
-  meta_df_Train %>% dplyr::arrange(sampleNum)-> meta_df_Train # put train set in order
   meta_df_Test %>% dplyr::arrange(sampleNum)-> meta_df_Test # put test set in order
+  meta_df_TrainTune %>% dplyr::arrange(sampleNum)-> meta_df_TrainTune # put train set in order
   
   remove(output)
   ###*****************************
-
+  
   
   ###*****************************
   # Divide the data as train and test
-  mainDataFrame_mrna[,as.vector(meta_df_Train$dataSet)]->trainDataFrame_mrna
+  mainDataFrame_mrna[,as.vector(meta_df_TrainTune$dataSet)]->traintuneDataFrame_mrna
   mainDataFrame_mrna[,as.vector(meta_df_Test$dataSet)]->testDataFrame_mrna
   
-  mainDataFrame_protein[,as.vector(meta_df_Train$dataSet)]->trainDataFrame_protein
+  mainDataFrame_protein[,as.vector(meta_df_TrainTune$dataSet)]->traintuneDataFrame_protein
   mainDataFrame_protein[,as.vector(meta_df_Test$dataSet)]->testDataFrame_protein
   ###*****************************
   
-
-  # ###*****************************
+  
+  ###*****************************
   if(batchCorrectionType=="separate")
   {
     # insert data preperation function overall
-    dim_reduced_DF_obj<-dataPrepearningCombFunction(meta_df_Train = meta_df_Train,
+    dim_reduced_DF_obj<-dataPrepearningCombFunction(meta_df_Train = meta_df_TrainTune,
                                                     meta_df_Test = meta_df_Test,
-                                                    trainDataFrame_mrna = trainDataFrame_mrna,
+                                                    trainDataFrame_mrna = traintuneDataFrame_mrna,
                                                     testDataFrame_mrna = testDataFrame_mrna,
-                                                    trainDataFrame_protein = trainDataFrame_protein,
+                                                    trainDataFrame_protein = traintuneDataFrame_protein,
                                                     testDataFrame_protein = testDataFrame_protein,
                                                     dataNameDF = dataNameDF,
                                                     dimReductionType = dimReductionType)
     
-    dim_reduced_train_DF = dim_reduced_DF_obj$dim_reduced_train_DF
+    dim_reduced_traintune_DF = dim_reduced_DF_obj$dim_reduced_train_DF
     dim_reduced_test_DF = dim_reduced_DF_obj$dim_reduced_test_DF
     dimensionChoice = dim_reduced_DF_obj$dimensionChoice 
   }
-  # ###***************************** 
   
-  
-  # ###*****************************
   if(batchCorrectionType=="together")
   {
     # insert data preperation function
-    trainDataFrame = dplyr::bind_rows(trainDataFrame_mrna, trainDataFrame_protein)
+    trainDataFrame = dplyr::bind_rows(trainDataFrame_mrna, trainDataFrame_protein)	
     testDataFrame = dplyr::bind_rows(testDataFrame_mrna, testDataFrame_protein)
     
-    dim_reduced_DF_obj<-dataPrepearningFunction(meta_df_Train = meta_df_Train,
-                                                meta_df_Test = meta_df_Test,
-                                                trainDataFrame = trainDataFrame,
-                                                testDataFrame = testDataFrame,
-                                                dataNameDF = dataNameDF,
+    dim_reduced_DF_obj<-dataPrepearningFunction(meta_df_Train = meta_df_TrainTune, 
+                                                meta_df_Test = meta_df_Test, 
+                                                trainDataFrame = traintuneDataFrame, 
+                                                testDataFrame = testDataFrame, 
+                                                dataNameDF = dataNameDF, 
                                                 dimReductionType = dimReductionType)
     
-    dim_reduced_train_DF = dim_reduced_DF_obj$dim_reduced_train_DF
+    dim_reduced_traintune_DF = dim_reduced_DF_obj$dim_reduced_train_DF
     dim_reduced_test_DF = dim_reduced_DF_obj$dim_reduced_test_DF
     dimensionChoice = dim_reduced_DF_obj$dimensionChoice
   }
-  # ###***************************** 
+  ###***************************** 
   
 
   ###*****************************
   # Generate Class Weight Vector
-  meta_df_Train %>%
+  meta_df_TrainTune %>%
     dplyr::group_by(conditionInvestigated)%>%
     dplyr::summarize(samSize=length(conditionInvestigated))->classWeightDf
-
   
   classWeightVector<-as.vector(sum(classWeightDf$samSize)/classWeightDf$samSize)
   names(classWeightVector)<-classWeightDf$conditionInvestigated
+  classWeightVectorRForest=classWeightVector/sum(classWeightVector)
+  ###*****************************
+  
+  
+  # Generate Gamma Cost and kernel vectors
+  ###*****************************
+  # gamma vector
+  gammaList=10^seq(from=log10(1/dimensionChoice)+powerRangeGammaLow,
+                   to=log10(1/dimensionChoice)+powerRangeGammaHigh,
+                   length.out = ndivision)
+  # cost vector
+  costList=10^seq(from=powerRangeCostLow,
+                  to=powerRangeCostHigh,
+                  length.out = ndivision)
   ###*****************************
   
 
-  browser()
   ###*****************************
-  # Generate Models by using e1071 with "svm" with "radial kernel"
-  modelSVM<-e1071::svm(conditionInvestigated ~., 
-                       data = dim_reduced_train_DF, 
-                       type=type_svmChoice, 
-                       class.weights =classWeightVector,
-                       kernel=kernel_typeChoice, probability = TRUE)
+  # tune svm for gamma, cost, kernel
+  tuneObjSVM<-e1071::tune(method = svm,
+                          conditionInvestigated~.,
+                          data = dim_reduced_traintune_DF,
+                          type = type_svmChoice,
+                          class.weights = classWeightVector,
+                          ranges = list(gamma = gammaList, cost =costList, kernel = kernelList),
+                          tunecontrol = tune.control(best.model = TRUE,
+                                                     performances = TRUE,
+                                                     sampling=samplingValue,
+                                                     cross=crossValue,
+                                                     nrepeat = nrepeatValue,
+                                                     error.fun = F1ScoreErrCpp))
+  ###*****************************
+  
   
   ###*****************************
+  # extracting parameters
+  modelSVM<-tuneObjSVM$best.model
+  gammaSVM=tuneObjSVM$best.parameters$gamma
+  costSVM=tuneObjSVM$best.parameters$cost
+  kernelSVM=as.vector(tuneObjSVM$best.parameters$kernel)
+  performanceSVM=1-tuneObjSVM$best.performance
+  performanceDfSVM=dplyr::mutate(as.data.frame(tuneObjSVM$performances),runNum=counter01)
+  ###*****************************
   
   
   ###*****************************
-  # Do Predictions with models
+  # making predictions with best model
   modelSVM %>%
     predict(.,dim_reduced_test_DF) %>%
     data.frame(predictedValue = .) %>%
     tibble::rownames_to_column(var = "dataSet") %>%
     dplyr::left_join(meta_df_Test,.) %>%
     dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
-    dplyr::mutate(TestTrainSubsetNo=counter01)->result_i
+    dplyr::mutate(TestTrainSubsetNo=counter01) %>%
+    dplyr::mutate(gamma=gammaSVM) %>%
+    dplyr::mutate(cost=costSVM) %>%
+    dplyr::mutate(kernel=kernelSVM) %>%
+    dplyr::mutate(performance=performanceSVM) -> result_i_SVM
   ###*****************************
   
   
   ###*****************************
-  # the main time consuming part is the addition of multiple results together
-  # to solve this problem 
-  # I divide final list into small peaces
-  if(counter01%%100==1)
-  {
-    tempList=result_i
-  }
-  
-  if(counter01%%100!=1 & counter01%%100!=100)
-  {
-    tempList=dplyr::rbind_list(tempList,result_i)
-  }
-  
-  if(counter01%%100==0)
-  {
-    counter02=counter02+1
-    assign(sprintf("tempList%03d", counter02),tempList)
-    remove(tempList)
+  counter02=0;
+  flag01=0
+  while(flag01 == 0 & counter02<=100){
+    counter02=counter02+1;
+    tuneObjRF<-try(e1071::tune.randomForest(x=dim_reduced_traintune_DF[-1], 
+                                            y=factor(dim_reduced_traintune_DF[[1]]), 
+                                            ntree= ntreelistRF,
+                                            mtry=mtrylistRF,
+                                            nodesize=nodesizelistRF,
+                                            tunecontrol = tune.control(best.model = TRUE,
+                                                                       performances = TRUE,
+                                                                       sampling=samplingValue,
+                                                                       cross=crossValue,
+                                                                       nrepeat = nrepeatValue,
+                                                                       error.fun = F1ScoreErrCpp)))
+    
+    print(paste0(counter02,"_",class(tuneObjRF)))
+    if(class(tuneObjRF)!="try-error"){flag01=1}
   }
   ###*****************************
   
-  print(counter01)
+  
+  ###*****************************
+  # extracting parameters
+  modelRF<-tuneObjRF$best.model
+  nodesizeRF<-tuneObjRF$best.parameters$nodesize
+  mtryRF<-tuneObjRF$best.parameters$mtry
+  ntreeRF<-as.vector(tuneObjRF$best.parameters$ntree)
+  performanceRF<-1-tuneObjRF$best.performance
+  performanceDfRF<-dplyr::mutate(as.data.frame(tuneObjRF$performances),runNum=counter01)
+  ###*****************************
+  
+  ###*****************************
+  # making predictions with best model
+  modelRF %>%
+    predict(.,dim_reduced_test_DF) %>%
+    data.frame(predictedValue = .) %>%
+    tibble::rownames_to_column(var = "dataSet") %>%
+    dplyr::left_join(meta_df_Test,.) %>%
+    dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
+    dplyr::mutate(TestTrainSubsetNo=counter01) %>%
+    dplyr::mutate(nodesize=nodesizeRF) %>%
+    dplyr::mutate(mtry=mtryRF) %>%
+    dplyr::mutate(ntree=ntreeRF) %>%
+    dplyr::mutate(performance=performanceRF) -> result_i_RF
+  ###*****************************
+  
+  
+  ###*****************************
+  # Make model RF Smaller (It can not make predictions anymore)
+  modelRF$forest$nodestatus<-NULL
+  modelRF$forest$bestvar<-NULL
+  modelRF$forest$treemap<-NULL
+  modelRF$forest$nodepred<-NULL
+  modelRF$forest$xbestsplit<-NULL
+  modelRF$forest$xlevels<-NULL
+  ###*****************************
+  
+  
+  
+  # Parallel Way of combining data
+  #******************************************
+  # generate the list for output
+  list(resultListSVM=result_i_SVM,
+       performanceDfSVM=performanceDfSVM,
+       #modelsvm=modelSVM,
+       #modelrf=modelRF,
+       resultListRF=result_i_RF,
+       performanceDfRF=performanceDfRF)
+  #******************************************
 }
 ###*****************************####
 # --END OF MAIN LOOP--
 
 
-# --RE ORGANIZING OUTPUT OF LOOP-- ####
-###*****************************
-# Combining Peaces
-result_List=dplyr::rbind_all(mget(grep("tempList*.*",ls(),value = TRUE)))
-remove(list = (grep("tempList*.*",ls(),value = TRUE)))
-###*****************************
+
+#******************************************
+# Save the data
+source("pipeline/timeStamp.R")
+#******************************************
 
 
-###*****************************
-# Calculating Percentages for predictions and generate summary df.
-result_List %>%
-  dplyr::group_by(conditionInvestigated) %>%
-  dplyr::summarise(conditionLength=length(conditionInvestigated)) %>%
-  dplyr::left_join(result_List, .)->result_List
+#******************************************
+# Save the files
+# a) save the loops output object (that includes predictions best parameters and parameter distributions)
+save(list = c("timeStampVector","parallel_Result",
+              "factorOrder","factorOrder_Short",
+              "expandedGrid","expandedGrid_Short",
+              "vectorList","vectorList_Short",
+              "testConditions","inputMetaDf"), 
+     file = paste0("../b_results/",fileName,".Rda"), compress = "xz")
 
-
-result_List %>%
-  dplyr::group_by(conditionInvestigated,predictedValue) %>%
-  dplyr::summarise(combinationLength=length(conditionInvestigated),
-                   conditionLength=unique(conditionLength),
-                   percentPrediction=100*combinationLength/conditionLength)->result_ListSum
-###*****************************####
-
-
-# Figures and save
-###*****************************####
-source("pipeline/machineLearning_subCode_figure_save.R")
-###*****************************
+# b) save the conditions to csv file
+timeStampFileOld<-read.csv(file = paste0("../b_results/","parametersCombined",".csv")) #import old file
+timeStampFileNew<-dplyr::bind_rows(timeStampFileOld,timeStampVector) # add new line
+timeStampFileNew<-unique(timeStampFileNew) # remove duplicates
+write.csv(x=timeStampFileNew, file=paste0("../b_results/","parametersCombined",".csv"),row.names = FALSE)
+#******************************************

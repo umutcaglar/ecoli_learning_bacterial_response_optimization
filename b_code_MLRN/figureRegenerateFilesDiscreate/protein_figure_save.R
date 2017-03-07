@@ -50,7 +50,11 @@ timeStampFile %>%
   dplyr::filter(pick_data=="protein") %>%
   dplyr::filter(growthPhase_names=="ExpAllPhase") %>%
   dplyr::filter(numRepeatsFor_TestTrainSubset_Choice==60) %>%
+  dplyr::filter(ndivision==25) %>%
   dplyr::filter(testConditions==paste0(c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase"),collapse = "_"))->chosenDataSetInfo
+
+
+chosenDataSetInfo[2,]->chosenDataSetInfo
 
 if(nrow(chosenDataSetInfo)!=1){stop("one than one file selected")}
 
@@ -66,47 +70,233 @@ testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase")
 
 #******************************************
 # Reshape the results of parallel processing (parallel_Result)
+result_ListSVM<-NULL
+performanceDfSVM<-NULL
+result_ListRF<-NULL
+performanceDfRF<-NULL
+
 for (counter01 in 1:timeStampVector$numRepeatsFor_TestTrainSubset_Choice)
 {
   if(counter01==1)
   {
-    result_List=parallel_Result[[counter01]]$resultList
-    performanceDf=parallel_Result[[counter01]]$performanceDf
+    result_ListSVM=parallel_Result[[counter01]]$resultListSVM
+    performanceDfSVM=parallel_Result[[counter01]]$performanceDfSVM
+    result_ListRF=parallel_Result[[counter01]]$resultListRF
+    performanceDfRF=parallel_Result[[counter01]]$performanceDfRF
   }
   if(counter01!=1)
   {
-    result_List=dplyr::bind_rows(result_List,
-                                parallel_Result[[counter01]]$resultList)
-    performanceDf=dplyr::bind_rows(performanceDf,
-                                   parallel_Result[[counter01]]$performanceDf)
+    result_ListSVM=dplyr::bind_rows(result_ListSVM,
+                                    parallel_Result[[counter01]]$resultListSVM)
+    performanceDfSVM=dplyr::bind_rows(performanceDfSVM,
+                                      parallel_Result[[counter01]]$performanceDfSVM)
+    result_ListRF=dplyr::bind_rows(result_ListSVM,
+                                   parallel_Result[[counter01]]$resultListRF)
+    performanceDfRF=dplyr::bind_rows(performanceDfRF,
+                                     parallel_Result[[counter01]]$performanceDfRF)
   }
 }
 
 
 ###*****************************
 # Generate the axis names for the figure at the end
-axisNames=levels(result_List$conditionInvestigated) 
+axisNames=levels(result_ListSVM$conditionInvestigated) 
 ###*****************************
 
 
 ###*****************************
-# pick wining kernel
+result_List<-dplyr::bind_rows(result_ListSVM,result_ListRF)
+result_List %>%
+  dplyr::mutate(model=ifelse(!is.na(kernel),kernel,"RF"))->result_List
+
+performanceDf<-dplyr::bind_rows(performanceDfSVM,performanceDfRF)
+performanceDf$kernel<-as.character(performanceDf$kernel)
+performanceDf %>%
+  dplyr::mutate(model=ifelse(!is.na(kernel),kernel,"RF"))->performanceDf 
+###*****************************
+
+
+###*****************************
+# FIND WINNING MODEL FREQUENCIES (i.e out of 60 runs which run wins how many times)
+# not result list only includes the winning model for SVM and the RF. 
+# I.e it does not include the best "linear", best "sigmoidal" and best "radial" model. 
 result_List %>% 
   dplyr::group_by(TestTrainSubsetNo)%>%
-  dplyr::summarise(kernel=unique(kernel))%>%
-  dplyr::group_by(kernel)%>%
-  dplyr::summarise(number=n())->kernelFreq
-
-kernelFreq %>%
-  dplyr::filter(number==max(number)) %>%
-  .$kernel->chosenKernel
-
-result_List %>%
-  dplyr::filter(kernel==chosenKernel)->result_List
+  dplyr::filter(performance==max(performance))%>%
+  dplyr::summarise(model=unique(model))%>%
+  dplyr::group_by(model)%>%
+  dplyr::summarise(number=n())->modelFreq
 ###*****************************
 
 
 ###*****************************
+# Model performance distributions
+performanceDf %>%
+  dplyr::select(-kernel)%>%
+  dplyr::mutate(gamma=ifelse(model=="linear",NA,gamma))%>%
+  dplyr::mutate(performance=1-error)%>%
+  dplyr::group_by(model, runNum, gamma, cost, nodesize, mtry, ntree) %>%
+  dplyr::summarize(error=unique(error), dispersion=unique(dispersion), 
+                   performance=unique(performance))%>%
+  dplyr::group_by(model, runNum) %>%
+  dplyr::select(error, performance) %>%
+  dplyr::filter(performance==max(performance))%>%
+  unique(.)%>%
+  dplyr::summarize(performance=unique(performance), 
+                   error=unique(error)) %>%
+  dplyr::group_by(model)%>%
+  dplyr::mutate(meanPerformance=mean(performance))%>%
+  dplyr::mutate(experiment="protein")->winnerModelsForEachExp
+
+
+fig01<-ggplot(winnerModelsForEachExp, aes(x=model, y=performance, group=model))+
+  geom_violin(fill="grey80")+
+  geom_point(aes(x=model, y=meanPerformance))
+
+print(fig01)
+
+write.csv(x = winnerModelsForEachExp, file = "../b_results/model_performance_protein.csv")
+###*****************************
+
+
+###*****************************
+# Parameter Histograms 2D
+# linear
+performanceDf  %>%
+  dplyr::select(-kernel)%>%
+  dplyr::mutate(gamma=ifelse(model=="linear",NA,gamma))%>%
+  dplyr::mutate(performance=1-error,
+                logCost=log10(cost),
+                logGamma=log10(gamma))%>%
+  dplyr::filter(model=="linear") %>%
+  dplyr::select(-gamma, -dispersion)%>%
+  dplyr::group_by(cost)%>%
+  dplyr::mutate(meanPerformance=mean(performance))%>%
+  unique(.) ->linear_performance_cost
+
+fig02a<-ggplot(linear_performance_cost, aes(x=logCost, y=performance, group=logCost))+
+  geom_violin(fill="grey80")+
+  geom_point(aes(y=meanPerformance))
+
+print(fig02a)
+
+
+# radial
+performanceDf  %>%
+  dplyr::select(-kernel)%>%
+  dplyr::mutate(gamma=ifelse(model=="linear",NA,gamma))%>%
+  dplyr::mutate(performance=1-error,
+                logCost=log10(cost),
+                logGamma=log10(gamma))%>%
+  dplyr::filter(model=="radial") %>%
+  dplyr::select(-dispersion)%>%
+  dplyr::group_by(cost, gamma)%>%
+  dplyr::summarize(meanPerformance=mean(performance), meanError=mean(error),
+                   logCost=unique(logCost), logGamma=unique(logGamma))%>%
+  unique(.) ->radial_performance_cost_gamma
+
+radial_performance_cost_gamma%>%
+  dplyr::group_by()%>%
+  dplyr::filter(meanPerformance==max(meanPerformance))->max_radial_performance_cost_gamma
+
+fig02b<-ggplot(radial_performance_cost_gamma, aes(x=logCost, y=logGamma, z=meanPerformance))+
+  geom_tile(aes(fill=meanPerformance), colour = "grey50")+
+  scale_fill_continuous(name="Perf.")+
+  geom_point(data = max_radial_performance_cost_gamma, aes(x=logCost, y=logGamma), colour="red")
+
+
+print(fig02b)
+
+# Sigmoidal
+performanceDf  %>%
+  dplyr::select(-kernel)%>%
+  dplyr::mutate(gamma=ifelse(model=="linear",NA,gamma))%>%
+  dplyr::mutate(performance=1-error,
+                logCost=log10(cost),
+                logGamma=log10(gamma))%>%
+  dplyr::filter(model=="sigmoid") %>%
+  dplyr::select(-dispersion)%>%
+  dplyr::group_by(cost, gamma)%>%
+  dplyr::summarize(meanPerformance=mean(performance), meanError=mean(error),
+                   logCost=unique(logCost), logGamma=unique(logGamma))%>%
+  unique(.) ->sigmoid_performance_cost_gamma
+
+sigmoid_performance_cost_gamma%>%
+  dplyr::group_by()%>%
+  dplyr::filter(meanPerformance==max(meanPerformance))->max_sigmoid_performance_cost_gamma
+
+fig02c<-ggplot(sigmoid_performance_cost_gamma, aes(x=logCost, y=logGamma, z=meanPerformance))+
+  geom_tile(aes(fill=meanPerformance), colour = "grey50")+
+  scale_fill_continuous(name="Perf.")+
+  geom_point(data = max_sigmoid_performance_cost_gamma, aes(x=logCost, y=logGamma), colour="red")
+
+print(fig02c)
+
+
+# RF
+performanceDf  %>%
+  dplyr::select(-kernel)%>%
+  dplyr::mutate(gamma=ifelse(model=="linear",NA,gamma))%>%
+  dplyr::mutate(performance=1-error,
+                logCost=log10(cost),
+                logGamma=log10(gamma))%>%
+  dplyr::filter(model=="RF") %>%
+  dplyr::select(-dispersion) %>%
+  dplyr::group_by(nodesize, mtry, ntree)%>%
+  dplyr::summarize(meanPerformance=mean(performance), meanError=mean(error))%>%
+  unique(.) %>%
+  dplyr::group_by()%>%
+  dplyr::mutate(maximum=factor(ifelse(meanPerformance==max(meanPerformance),1,0)))->RF_performance_nodsize_mtry_ntree
+
+RF_performance_nodsize_mtry_ntree%>%
+  dplyr::group_by()%>%
+  dplyr::filter(meanPerformance==max(meanPerformance))->max_RF_performance_nodsize_mtry_ntree
+
+fig02d<-ggplot(RF_performance_nodsize_mtry_ntree, aes(x=nodesize, y=mtry, z=meanPerformance))+
+  facet_grid(.~ntree)+
+  geom_tile(aes(fill=meanPerformance), colour = "grey50")+
+  scale_fill_continuous(name="Perf.")+
+  geom_point(aes(colour="red", alpha=maximum))+
+  scale_alpha_discrete(range = c(0,1), guide=FALSE)+
+  scale_color_discrete(guide=FALSE)
+
+print(fig02d)
+
+
+# Combine
+temp01<-cowplot::plot_grid(fig02a,fig02b,fig02c,ncol = 3, nrow = 1, labels = c("A","B","C"), scale = .9)
+combinedParameters<-cowplot::plot_grid(temp01,fig02d,ncol = 1, nrow = 2, labels = c("", "D"), scale= .9)
+print(combinedParameters)
+
+cowplot::save_plot(filename = "../b_figures/combinedParameters_protein.jpeg", plot = combinedParameters, ncol = 3, nrow = 2)
+###*****************************
+
+
+###*****************************
+# Calculate Model Frequency
+winnerModelsForEachExp %>%
+  dplyr::group_by(runNum) %>%
+  dplyr::filter(performance==max(performance))%>%
+  dplyr::group_by(model) %>%
+  dplyr::summarise(numWin=n())->modelFrequency
+
+modelFrequency %>%
+  dplyr::filter(numWin==max(numWin)) %>%
+  .$model->chosenModel
+###*****************************
+
+
+###*****************************
+result_List  %>%
+  dplyr::select(-kernel)%>%
+  dplyr::mutate(gamma=ifelse(model=="linear",NA,gamma))%>%
+  dplyr::mutate(logCost=log10(cost),
+                logGamma=log10(gamma))%>%
+  dplyr::filter(model==chosenModel) %>%
+  dplyr::group_by(TestTrainSubsetNo)%>%
+  dplyr::filter(performance==max(performance))->result_List
+
+
 # Calculating Percentages for predictions and generate summary df.
 result_List %>%
   dplyr::group_by(conditionInvestigated) %>%
@@ -198,7 +388,7 @@ names(colorCodes)<-as.vector(tidyDF$variable)
 
 ###*****************************
 # Generate Associated Figures
-fig01<-ggplot(result_ListSum, aes( y=conditionInvestigated,x= predictedValue))+
+fig03<-ggplot(result_ListSum, aes( y=conditionInvestigated,x= predictedValue))+
   geom_tile(aes(fill=percentPrediction),colour = "grey50")+
   scale_fill_gradient(low = "White", high = "Black",limits=c(0,100),name = "% Prediction")+
   geom_text(aes(label=sprintf("%1.0f", percentPrediction)),size=8, color="white")+
@@ -218,11 +408,11 @@ fig01<-ggplot(result_ListSum, aes( y=conditionInvestigated,x= predictedValue))+
          strip.text = element_text(size = 14),
          legend.position="none")
 
-#fig01<-ggdraw(switch_axis_position(fig01, axis = 'x'))
+#fig03<-ggdraw(switch_axis_position(fig03, axis = 'x'))
 
-print(fig01)
+print(fig03)
 
-fig02<-ggplot(result_ListSum, aes( y=conditionInvestigated,x= predictedValue))+
+fig04<-ggplot(result_ListSum, aes( y=conditionInvestigated,x= predictedValue))+
   geom_tile(aes(fill=percentPrediction))+
   scale_fill_gradient(low = "White", high = "Black",limits=c(0,100),name = "% Prediction")+
   geom_text(aes(label=sprintf("%1.0f", percentPrediction)),size=8)+
@@ -240,12 +430,12 @@ fig02<-ggplot(result_ListSum, aes( y=conditionInvestigated,x= predictedValue))+
          legend.text=element_text(size=14),
          strip.text = element_text(size = 14))
 
-percentLegendObj <- gtable_filter(ggplotGrob(fig02), "guide-box")
+percentLegendObj <- gtable_filter(ggplotGrob(fig04), "guide-box")
 figPercent=ggdraw(percentLegendObj)
 print(figPercent)
 
 
-fig03<-ggplot(tidyDF, aes( x=axis1, y=condition))+
+fig05<-ggplot(tidyDF, aes( x=axis1, y=condition))+
   
   geom_tile(aes(fill=variable))+
   scale_fill_manual(values=colorCodes)+ # Color bar
@@ -257,16 +447,16 @@ fig03<-ggplot(tidyDF, aes( x=axis1, y=condition))+
                              byrow = TRUE))+
   theme(legend.position="bottom",
         legend.key.size= unit(.6,"cm"))
-print(fig03)
+print(fig05)
 
-variableLegendObj <- gtable_filter(ggplotGrob(fig03), "guide-box")
+variableLegendObj <- gtable_filter(ggplotGrob(fig05), "guide-box")
 figPercent=ggdraw(variableLegendObj)
 print(variableLegendObj)
 
 
 tidyDF$condition <- factor(tidyDF$condition,levels=rev(testConditions))
 
-fig04<-ggplot(tidyDF, aes( y=axis2, x=condition))+
+fig06<-ggplot(tidyDF, aes( y=axis2, x=condition))+
   geom_tile(aes(fill=variable))+
   scale_fill_manual(values=colorCodes)+ # Color bar
   geom_text(aes(label=variable_Short),fontface="bold") + 
@@ -277,18 +467,18 @@ fig04<-ggplot(tidyDF, aes( y=axis2, x=condition))+
                              byrow = TRUE))+
   theme(legend.position="bottom",
         legend.key.size= unit(.6,"cm"))
-print(fig04)
+print(fig06)
 
 
 
 # Combine Figures
 # Rename figure 1
-figComb=fig01
+figComb=fig03
 
 #take parts from figure3
-color_x <- gtable_filter(ggplotGrob(fig04), "panel")
-color_y <- gtable_filter(ggplotGrob(fig03), "panel")
-color_legend <- gtable_filter(ggplotGrob(fig03), "guide-box")
+color_x <- gtable_filter(ggplotGrob(fig06), "panel")
+color_y <- gtable_filter(ggplotGrob(fig05), "panel")
+color_legend <- gtable_filter(ggplotGrob(fig05), "guide-box")
 # color_x_categories <- gtable_filter(ggplotGrob(fig02a), "axis-l")
 
 # Add the new x axis
@@ -315,13 +505,14 @@ g.main <- gtable_add_grob(g.main, color_x,
 figComb=ggdraw(g.main)
 print(figComb)
 
+
 # Add the color legend
 index <- subset(g.main$layout, name == "panel")
-g.main <- gtable_add_rows(g.main, unit.c(unit(.05, "null")), index$t+2)
+g.main <- gtable_add_rows(g.main, unit.c(unit(.08, "null")), index$t+3)
 g.main <- gtable_add_grob(g.main, color_legend,
-                          t = index$b+2,
+                          t = index$b+4,
                           l = index$l,
-                          b = index$b+2,
+                          b = index$b+4,
                           r = index$r,
                           name="color_legend")
 
@@ -332,12 +523,12 @@ g.main <- gtable_add_rows(g.main, unit.c(unit(0.35, "in")), index$b-2)
 
 # add percent legend
 index <- subset(g.main$layout, name == "panel")
-g.main <- gtable_add_cols(g.main, unit.c(unit(.17, "null")), index$l+2)
+g.main <- gtable_add_cols(g.main, unit.c(unit(.17, "null")), index$l+3)
 g.main <- gtable_add_grob(g.main, percentLegendObj,
                           t = index$b,
-                          l = index$l+2,
+                          l = index$l+4,
                           b = index$b,
-                          r = index$r+2,
+                          r = index$r+4,
                           name="percentLegendObj")
 
 figComb_wL=ggdraw(g.main)
@@ -348,24 +539,9 @@ print(color_legend)
 ###*****************************
 
 
-###*****************************
-# Generate file name based on date
-options(digits.secs=6)
-time1<-Sys.time(); 
-print(time1); 
-time2<-gsub(pattern = "*.*\\.",replacement = "", x = time1);
-time3<-paste0(format(time1, "%Y_%m_%d_%H_%M_%S"),"_",time2)
-fileName=paste0("No_",time3)
-###*****************************
-
-
-
 #doNotSave=1
 if(! exists("doNotSave"))
 {
-  ###*****************************
-  # Results summary file 
-  
   ###*****************************
   # Save Figure
   cowplot::save_plot(figComb,
@@ -394,3 +570,10 @@ if(! exists("doNotSave"))
 }
 
 
+###*****************************
+result_ListSum%>%
+  dplyr::filter(predictedValue==conditionInvestigated)%>%
+  .$percentPrediction %>%sum(.)->success
+
+print(success)
+###*****************************
