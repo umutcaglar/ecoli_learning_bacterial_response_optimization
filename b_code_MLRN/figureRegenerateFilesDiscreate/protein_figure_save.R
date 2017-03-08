@@ -54,7 +54,7 @@ timeStampFile %>%
   dplyr::filter(testConditions==paste0(c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase"),collapse = "_"))->chosenDataSetInfo
 
 
-chosenDataSetInfo[2,]->chosenDataSetInfo
+chosenDataSetInfo[1,]->chosenDataSetInfo
 
 if(nrow(chosenDataSetInfo)!=1){stop("one than one file selected")}
 
@@ -123,7 +123,8 @@ performanceDf %>%
 result_List %>% 
   dplyr::group_by(TestTrainSubsetNo)%>%
   dplyr::filter(performance==max(performance))%>%
-  dplyr::summarise(model=unique(model))%>%
+  dplyr::group_by(TestTrainSubsetNo,gamma,cost,nodesize,mtry,ntree)%>%
+  dplyr::summarise(model=unique(model), performance=unique(performance))%>%
   dplyr::group_by(model)%>%
   dplyr::summarise(number=n())->modelFreq
 ###*****************************

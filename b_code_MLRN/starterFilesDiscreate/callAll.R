@@ -26,6 +26,12 @@ source("starterFilesDiscreate/code_int_mrna.R")
 source("starterFilesDiscreate/code_int_protein.R")
 source("starterFilesDiscreate/code_int_mrna_protein.R")
 
+# call phases
+source("starterFilesDiscreate/code_mrna_exp.R")
+source("starterFilesDiscreate/code_mrna_sta.R")
+source("starterFilesDiscreate/code_protein_exp.R")
+source("starterFilesDiscreate/code_protein_sta.R")
+
 # call mrna subs
 source("starterFilesDiscreate/code_mrna_carbon.R")
 source("starterFilesDiscreate/code_mrna_phase.R")

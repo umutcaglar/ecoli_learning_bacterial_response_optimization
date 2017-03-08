@@ -44,24 +44,30 @@ source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")
 
 
 ###*****************************
+# Parameters
+analyzeName="mRNA"
+pick_data="mrna"
+growthPhase="ExpAllPhase"
+testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase")
+ndivision=31
+numRepeatsFor_TestTrainSubset_Choice=60
+###*****************************
+
+
+###*****************************
 # read the list to find file name
 timeStampFile<-read.csv(file = paste0("../b_results/","parametersCombined",".csv")) #import file
 timeStampFile %>%
-  dplyr::filter(pick_data=="mrna") %>%
-  dplyr::filter(growthPhase_names=="ExpAllPhase") %>%
-  dplyr::filter(numRepeatsFor_TestTrainSubset_Choice==60) %>%
-  dplyr::filter(ndivision==25) %>%
-  dplyr::filter(testConditions==paste0(c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase"),collapse = "_"))->chosenDataSetInfo
+  dplyr::filter(pick_data==get("pick_data")) %>%
+  dplyr::filter(growthPhase_names==get("growthPhase")) %>%
+  dplyr::filter(numRepeatsFor_TestTrainSubset_Choice==get("numRepeatsFor_TestTrainSubset_Choice")) %>%
+  dplyr::filter(ndivision==get("ndivision")) %>%
+  dplyr::filter(testConditions==paste0(testConditions,collapse = "_"))->chosenDataSetInfo
 
 if(nrow(chosenDataSetInfo)!=1){stop("one than one file selected")}
 
 fileName=as.vector(chosenDataSetInfo$fileName)
 load(file = paste0("../b_results/",fileName,".RDA"))
-###*****************************
-
-
-###*****************************
-testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase")
 ###*****************************
 
 
@@ -76,97 +82,118 @@ for (counter01 in 1:timeStampVector$numRepeatsFor_TestTrainSubset_Choice)
 {
   if(counter01==1)
   {
-    result_ListSVM=parallel_Result[[counter01]]$resultListSVM
-    performanceDfSVM=parallel_Result[[counter01]]$performanceDfSVM
-    result_ListRF=parallel_Result[[counter01]]$resultListRF
-    performanceDfRF=parallel_Result[[counter01]]$performanceDfRF
+    result_List_linear=parallel_Result[[counter01]]$resultListSVM_linear
+    result_List_radial=parallel_Result[[counter01]]$resultListSVM_radial
+    result_List_sigmoid=parallel_Result[[counter01]]$resultListSVM_sigmoid
+    result_List_RF=parallel_Result[[counter01]]$resultListRF
+    
+    performanceDf_linear=parallel_Result[[counter01]]$performanceDf_linear
+    performanceDf_radial=parallel_Result[[counter01]]$performanceDf_radial
+    performanceDf_sigmoid=parallel_Result[[counter01]]$performanceDf_sigmoid
+    performanceDf_RF=parallel_Result[[counter01]]$performanceDfRF
   }
+  
   if(counter01!=1)
   {
-    result_ListSVM=dplyr::bind_rows(result_ListSVM,
-                                    parallel_Result[[counter01]]$resultListSVM)
-    performanceDfSVM=dplyr::bind_rows(performanceDfSVM,
-                                      parallel_Result[[counter01]]$performanceDfSVM)
-    result_ListRF=dplyr::bind_rows(result_ListSVM,
-                                   parallel_Result[[counter01]]$resultListRF)
-    performanceDfRF=dplyr::bind_rows(performanceDfRF,
-                                     parallel_Result[[counter01]]$performanceDfRF)
+    result_List_linear=dplyr::bind_rows(result_List_linear, parallel_Result[[counter01]]$resultListSVM_linear)
+    result_List_radial=dplyr::bind_rows(result_List_radial, parallel_Result[[counter01]]$resultListSVM_radial)
+    result_List_sigmoid=dplyr::bind_rows(result_List_sigmoid, parallel_Result[[counter01]]$resultListSVM_sigmoid)
+    result_List_RF=dplyr::bind_rows(result_List_RF,parallel_Result[[counter01]]$resultListRF)
+    
+    performanceDf_linear=dplyr::bind_rows(performanceDf_linear, parallel_Result[[counter01]]$performanceDf_linear)
+    performanceDf_radial=dplyr::bind_rows(performanceDf_radial, parallel_Result[[counter01]]$performanceDf_radial)
+    performanceDf_sigmoid=dplyr::bind_rows(performanceDf_sigmoid, parallel_Result[[counter01]]$performanceDf_sigmoid)
+    performanceDf_RF=dplyr::bind_rows(performanceDf_RF, parallel_Result[[counter01]]$performanceDfRF)
   }
 }
 
 
 ###*****************************
 # Generate the axis names for the figure at the end
-axisNames=levels(result_ListSVM$conditionInvestigated) 
+axisNames=levels(result_List_radial$conditionInvestigated) 
 ###*****************************
 
 
 ###*****************************
-result_List<-dplyr::bind_rows(result_ListSVM,result_ListRF)
+# Combine Results and organize DF's
+
+# a) Result list (best of 60 runs including predictions)
+result_List_linear$model<-"linear"
+result_List_radial$model<-"radial"
+result_List_sigmoid$model<-"sigmoid"
+result_List_RF$model<-"RF"
+
+result_List<-dplyr::bind_rows(result_List_linear, 
+                              result_List_radial, 
+                              result_List_sigmoid, 
+                              result_List_RF)
+result_List$kernel<-NULL
+
+# b) Performance data frame performance of all distinct runs
+performanceDf_linear$model="linear"
+performanceDf_radial$model="radial"
+performanceDf_sigmoid$model="sigmoid"
+performanceDf_RF$model="RF"
+
+performanceDf<-dplyr::bind_rows(performanceDf_linear,
+                                performanceDf_radial,
+                                performanceDf_sigmoid, 
+                                performanceDf_RF)
+
+performanceDf  %>%
+  dplyr::mutate(performance=1-error,
+                logCost=log10(cost),
+                logGamma=log10(gamma))%>%
+  dplyr::select(runNum, model, 
+                cost, logCost, gamma, logGamma, nodesize, mtry, ntree, 
+                error, performance, dispersion)->performanceDf
+###*****************************
+
+
+
+
+###*****************************
+# Find the 240 =60 x 4 best models 
 result_List %>%
-  dplyr::mutate(model=ifelse(!is.na(kernel),kernel,"RF"))->result_List
+  dplyr::group_by(TestTrainSubsetNo, model) %>%
+  dplyr::summarize(performance=unique(performance),
+                   cost = unique(cost), 
+                   gamma = unique(gamma), 
+                   nodesize = unique(nodesize), 
+                   mtry = unique(mtry), 
+                   ntree = unique(ntree))%>%
+  dplyr::arrange(model, TestTrainSubsetNo)->result_List_sum  # the file that have length of 60x4
 
-performanceDf<-dplyr::bind_rows(performanceDfSVM,performanceDfRF)
-performanceDf$kernel<-as.character(performanceDf$kernel)
-performanceDf %>%
-  dplyr::mutate(model=ifelse(!is.na(kernel),kernel,"RF"))->performanceDf 
-###*****************************
-
-
-###*****************************
-# FIND WINNING MODEL FREQUENCIES (i.e out of 60 runs which run wins how many times)
-# not result list only includes the winning model for SVM and the RF. 
-# I.e it does not include the best "linear", best "sigmoidal" and best "radial" model. 
-result_List %>% 
-  dplyr::group_by(TestTrainSubsetNo)%>%
-  dplyr::filter(performance==max(performance))%>%
-  dplyr::summarise(model=unique(model))%>%
+result_List_sum  %>%   
   dplyr::group_by(model)%>%
-  dplyr::summarise(number=n())->modelFreq
-###*****************************
+  dplyr::mutate(meanPerformance=mean(performance)) %>%  # calculate mean performance of each model
+  dplyr::mutate(analyzeName=analyzeName)->result_List_sum  # add the analyze name
 
-
-###*****************************
-# Model performance distributions
-performanceDf %>%
-  dplyr::select(-kernel)%>%
-  dplyr::mutate(gamma=ifelse(model=="linear",NA,gamma))%>%
-  dplyr::mutate(performance=1-error)%>%
-  dplyr::group_by(model, runNum, gamma, cost, nodesize, mtry, ntree) %>%
-  dplyr::summarize(error=unique(error), dispersion=unique(dispersion), 
-                   performance=unique(performance))%>%
-  dplyr::group_by(model, runNum) %>%
-  dplyr::select(error, performance) %>%
-  dplyr::filter(performance==max(performance))%>%
-  unique(.)%>%
-  dplyr::summarize(performance=unique(performance), 
-                   error=unique(error)) %>%
-  dplyr::group_by(model)%>%
-  dplyr::mutate(meanPerformance=mean(performance))%>%
-  dplyr::mutate(experiment="mRNA")->winnerModelsForEachExp
-
-
-fig01<-ggplot(winnerModelsForEachExp, aes(x=model, y=performance, group=model))+
+fig01<-ggplot(result_List_sum, aes(x=model, y=performance, group=model))+
   geom_violin(fill="grey80")+
   geom_point(aes(x=model, y=meanPerformance))
 
 print(fig01)
 
-write.csv(x = winnerModelsForEachExp, file = "../b_results/model_performance_mRNA.csv")
+write.csv(x = result_List_sum, file = paste0("../b_results/","model_performance_",analyzeName,".csv"))
+
+result_List_sum%>%
+  dplyr::group_by(TestTrainSubsetNo)%>%
+  dplyr::filter(performance==max(performance))%>%
+  dplyr::group_by(model)%>%
+  dplyr::summarise(numWin=n())->modelFreq  # number of wins for each model for different Test-Train subsets
+
+modelFreq %>% dplyr::filter(numWin==max(numWin)) %>% .$model->chosenModel # chosen model based on most wins
 ###*****************************
+
+
 
 
 ###*****************************
 # Parameter Histograms 2D
 # linear
 performanceDf  %>%
-  dplyr::select(-kernel)%>%
-  dplyr::mutate(gamma=ifelse(model=="linear",NA,gamma))%>%
-  dplyr::mutate(performance=1-error,
-                logCost=log10(cost),
-                logGamma=log10(gamma))%>%
   dplyr::filter(model=="linear") %>%
-  dplyr::select(-gamma, -dispersion)%>%
   dplyr::group_by(cost)%>%
   dplyr::mutate(meanPerformance=mean(performance))%>%
   unique(.) ->linear_performance_cost
@@ -174,19 +201,13 @@ performanceDf  %>%
 fig02a<-ggplot(linear_performance_cost, aes(x=logCost, y=performance, group=logCost))+
   geom_violin(fill="grey80")+
   geom_point(aes(y=meanPerformance))
-  
+
 print(fig02a)
 
 
 # radial
 performanceDf  %>%
-  dplyr::select(-kernel)%>%
-  dplyr::mutate(gamma=ifelse(model=="linear",NA,gamma))%>%
-  dplyr::mutate(performance=1-error,
-                logCost=log10(cost),
-                logGamma=log10(gamma))%>%
   dplyr::filter(model=="radial") %>%
-  dplyr::select(-dispersion)%>%
   dplyr::group_by(cost, gamma)%>%
   dplyr::summarize(meanPerformance=mean(performance), meanError=mean(error),
                    logCost=unique(logCost), logGamma=unique(logGamma))%>%
@@ -200,19 +221,13 @@ fig02b<-ggplot(radial_performance_cost_gamma, aes(x=logCost, y=logGamma, z=meanP
   geom_tile(aes(fill=meanPerformance), colour = "grey50")+
   scale_fill_continuous(name="Perf.")+
   geom_point(data = max_radial_performance_cost_gamma, aes(x=logCost, y=logGamma), colour="red")
-  
 
 print(fig02b)
 
+
 # Sigmoidal
 performanceDf  %>%
-  dplyr::select(-kernel)%>%
-  dplyr::mutate(gamma=ifelse(model=="linear",NA,gamma))%>%
-  dplyr::mutate(performance=1-error,
-                logCost=log10(cost),
-                logGamma=log10(gamma))%>%
   dplyr::filter(model=="sigmoid") %>%
-  dplyr::select(-dispersion)%>%
   dplyr::group_by(cost, gamma)%>%
   dplyr::summarize(meanPerformance=mean(performance), meanError=mean(error),
                    logCost=unique(logCost), logGamma=unique(logGamma))%>%
@@ -226,19 +241,13 @@ fig02c<-ggplot(sigmoid_performance_cost_gamma, aes(x=logCost, y=logGamma, z=mean
   geom_tile(aes(fill=meanPerformance), colour = "grey50")+
   scale_fill_continuous(name="Perf.")+
   geom_point(data = max_sigmoid_performance_cost_gamma, aes(x=logCost, y=logGamma), colour="red")
-  
+
 print(fig02c)
 
 
 # RF
 performanceDf  %>%
-  dplyr::select(-kernel)%>%
-  dplyr::mutate(gamma=ifelse(model=="linear",NA,gamma))%>%
-  dplyr::mutate(performance=1-error,
-                logCost=log10(cost),
-                logGamma=log10(gamma))%>%
   dplyr::filter(model=="RF") %>%
-  dplyr::select(-dispersion) %>%
   dplyr::group_by(nodesize, mtry, ntree)%>%
   dplyr::summarize(meanPerformance=mean(performance), meanError=mean(error))%>%
   unique(.) %>%
@@ -260,35 +269,26 @@ fig02d<-ggplot(RF_performance_nodsize_mtry_ntree, aes(x=nodesize, y=mtry, z=mean
 print(fig02d)
 
 
-# Combine
-temp01<-cowplot::plot_grid(fig02a,fig02b,fig02c,ncol = 3, nrow = 1, labels = c("A","B","C"), scale = .9)
-combinedParameters<-cowplot::plot_grid(temp01,fig02d,ncol = 1, nrow = 2, labels = c("", "D"), scale= .9)
+# Combine all 4 plots fig02a, fig02b, fig02c, fig02d
+combinedParameters<-cowplot::ggdraw() +
+  cowplot::draw_plot(plot=fig02a, x=0, y=.5, width=1/3, height=.5) +
+  cowplot::draw_plot(plot=fig02b, x=1/3, y=0.5, width=1/3, height=.5) +
+  cowplot::draw_plot(plot=fig02c, x=2/3, y=0.5, width=1/3, height=.5) +
+  cowplot::draw_plot(plot=fig02d, x=0, y=0, width=1, height=.5) +
+  cowplot::draw_plot_label(c("A", "B", "C", "D"), c(0, 1/3, 2/3, 0), c(1, 1, 1, .5), size = 15)
+
 print(combinedParameters)
 
-cowplot::save_plot(filename = "../b_figures/combinedParameters_mRNA.jpeg", plot = combinedParameters, ncol = 3, nrow = 2)
+cowplot::save_plot(filename = paste0("../b_figures/","combinedParameters_",analyzeName,".jpeg"), 
+                   plot = combinedParameters, ncol = 3, nrow = 2)
 ###*****************************
 
 
+
+# Generate the Square Figure
 ###*****************************
-# Calculate Model Frequency
-winnerModelsForEachExp %>%
-  dplyr::group_by(runNum) %>%
-  dplyr::filter(performance==max(performance))%>%
-  dplyr::group_by(model) %>%
-  dplyr::summarise(numWin=n())->modelFrequency
-
-modelFrequency %>%
-  dplyr::filter(numWin==max(numWin)) %>%
-  .$model->chosenModel
-###*****************************
-
-
 ###*****************************
 result_List  %>%
-  dplyr::select(-kernel)%>%
-  dplyr::mutate(gamma=ifelse(model=="linear",NA,gamma))%>%
-  dplyr::mutate(logCost=log10(cost),
-                logGamma=log10(gamma))%>%
   dplyr::filter(model==chosenModel) %>%
   dplyr::group_by(TestTrainSubsetNo)%>%
   dplyr::filter(performance==max(performance))->result_List
