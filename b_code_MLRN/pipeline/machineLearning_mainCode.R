@@ -55,13 +55,27 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   meta_df_TrainTune %>%
     dplyr::group_by(conditionInvestigated)%>%
     dplyr::summarize(samSize=length(conditionInvestigated))->classWeightDf
+  if(any(classWeightDf$samSize==1)){stop("no division in between train-tune is possible")}
+  
+  tryList=data.frame(tryList=paste0("test_",seq(1,crossValue)))
+  classWeightExpandDf<-merge(classWeightDf,tryList, all=TRUE)
+  classWeightExpandDf %>%
+    dplyr::group_by(conditionInvestigated,tryList)%>%
+    dplyr::mutate(nTune=ifelse(samSize==2,as.vector(sample(0:1,1),mode="numeric"),-1),
+                  nTune=ifelse(samSize>2,ceiling(samSize*percentTune),nTune))%>%
+    dplyr::mutate(nTrain=samSize-nTune)->classWeightExpandDf
+  
+  classWeightExpandDf %>%
+    dplyr::group_by(conditionInvestigated) %>%
+    dplyr::mutate(trainWeight=sum(nTrain)/nTrain)->q
+  
   
   classWeightVector<-as.vector(sum(classWeightDf$samSize)/classWeightDf$samSize)
   names(classWeightVector)<-classWeightDf$conditionInvestigated
   classWeightVectorRForest=classWeightVector/sum(classWeightVector)
   ###*****************************
   
-  
+  browser()
   # Generate Gamma Cost and kernel vectors
   ###*****************************
   # gamma vector
@@ -75,190 +89,17 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   ###*****************************
   
   
-  # Kernel 1 -> "linear"
-  ###*****************************
-  # tune svm for cost
-  browser()
-  tuneObjSVM_linear<-e1071::tune(method = svm,
-                       conditionInvestigated~.,
-                       data = dim_reduced_traintune_DF,
-                       type = type_svmChoice,
-                       kernel = "linear",
-                       class.weights = classWeightVector,
-                       ranges = list(cost =costList),
-                       tunecontrol = tune.control(best.model = TRUE,
-                                                  performances = TRUE,
-                                                  sampling=samplingValue,
-                                                  cross=crossValue,
-                                                  nrepeat = nrepeatValue,
-                                                  error.fun = F1ScoreErrCpp))
-  ###*****************************
+  # model 1 -> "linear"
+  source("pipeline/model_linear.R")
   
+  # model 2 -> "radial"
+  source("pipeline/model_radial.R")
   
-  ###*****************************
-  # extracting parameters
-  modelSVM_linear<-tuneObjSVM_linear$best.model
-  costSVM_linear=tuneObjSVM_linear$best.parameters$cost
-  performanceSVM_linear=1-tuneObjSVM_linear$best.performance
-  performanceDfSVM_linear=dplyr::mutate(as.data.frame(tuneObjSVM_linear$performances),runNum=counter01)
-  ###*****************************
+  # model 3 -> "sigmoid"
+  source("pipeline/model_sigmoid.R")
   
-  
-  ###*****************************
-  # making predictions with best model
-  modelSVM_linear %>%
-    predict(.,dim_reduced_test_DF) %>%
-    data.frame(predictedValue = .) %>%
-    tibble::rownames_to_column(var = "dataSet") %>%
-    dplyr::left_join(meta_df_Test,.) %>%
-    dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
-    dplyr::mutate(TestTrainSubsetNo=counter01) %>%
-    dplyr::mutate(cost=costSVM_linear) %>%
-    dplyr::mutate(kernel="linear") %>%
-    dplyr::mutate(performance=performanceSVM_linear) -> result_i_linear
-  ###*****************************
-  
-  
-  # Kernel 2 -> "radial"
-  ###*****************************
-  # tune svm for gamma, cost
-  tuneObjSVM_radial<-e1071::tune(method = svm,
-                                 conditionInvestigated~.,
-                                 data = dim_reduced_traintune_DF,
-                                 type = type_svmChoice,
-                                 kernel = "radial",
-                                 class.weights = classWeightVector,
-                                 ranges = list(cost =costList, gamma=gammaList),
-                                 tunecontrol = tune.control(best.model = TRUE,
-                                                            performances = TRUE,
-                                                            sampling=samplingValue,
-                                                            cross=crossValue,
-                                                            nrepeat = nrepeatValue,
-                                                            error.fun = F1ScoreErrCpp))
-  ###*****************************
-  
-  
-  ###*****************************
-  # extracting parameters
-  modelSVM_radial<-tuneObjSVM_radial$best.model
-  costSVM_radial=tuneObjSVM_radial$best.parameters$cost
-  gammaSVM_radial=tuneObjSVM_radial$best.parameters$gamma
-  performanceSVM_radial=1-tuneObjSVM_radial$best.performance
-  performanceDfSVM_radial=dplyr::mutate(as.data.frame(tuneObjSVM_radial$performances),runNum=counter01)
-  ###*****************************
-  
-  
-  ###*****************************
-  # making predictions with best model
-  modelSVM_radial %>%
-    predict(.,dim_reduced_test_DF) %>%
-    data.frame(predictedValue = .) %>%
-    tibble::rownames_to_column(var = "dataSet") %>%
-    dplyr::left_join(meta_df_Test,.) %>%
-    dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
-    dplyr::mutate(TestTrainSubsetNo=counter01) %>%
-    dplyr::mutate(cost=costSVM_radial) %>%
-    dplyr::mutate(gamma=gammaSVM_radial) %>%
-    dplyr::mutate(kernel="radial") %>%
-    dplyr::mutate(performance=performanceSVM_radial) -> result_i_radial
-  ###*****************************
-  
-
-  # Kernel 3 -> "sigmoid"
-  ###*****************************
-  # tune svm for gamma, cost
-  tuneObjSVM_sigmoid<-e1071::tune(method = svm,
-                                 conditionInvestigated~.,
-                                 data = dim_reduced_traintune_DF,
-                                 type = type_svmChoice,
-                                 kernel = "sigmoid",
-                                 class.weights = classWeightVector,
-                                 ranges = list(cost =costList, gamma=gammaList),
-                                 tunecontrol = tune.control(best.model = TRUE,
-                                                            performances = TRUE,
-                                                            sampling=samplingValue,
-                                                            cross=crossValue,
-                                                            nrepeat = nrepeatValue,
-                                                            error.fun = F1ScoreErrCpp))
-  ###*****************************
-  
-  
-  ###*****************************
-  # extracting parameters
-  modelSVM_sigmoid<-tuneObjSVM_sigmoid$best.model
-  costSVM_sigmoid=tuneObjSVM_sigmoid$best.parameters$cost
-  gammaSVM_sigmoid=tuneObjSVM_sigmoid$best.parameters$gamma
-  performanceSVM_sigmoid=1-tuneObjSVM_sigmoid$best.performance
-  performanceDfSVM_sigmoid=dplyr::mutate(as.data.frame(tuneObjSVM_sigmoid$performances),runNum=counter01)
-  ###*****************************
-  
-  
-  ###*****************************
-  # making predictions with best model
-  modelSVM_sigmoid %>%
-    predict(.,dim_reduced_test_DF) %>%
-    data.frame(predictedValue = .) %>%
-    tibble::rownames_to_column(var = "dataSet") %>%
-    dplyr::left_join(meta_df_Test,.) %>%
-    dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
-    dplyr::mutate(TestTrainSubsetNo=counter01) %>%
-    dplyr::mutate(cost=costSVM_sigmoid) %>%
-    dplyr::mutate(gamma=gammaSVM_sigmoid) %>%
-    dplyr::mutate(kernel="sigmoid") %>%
-    dplyr::mutate(performance=performanceSVM_sigmoid) -> result_i_sigmoid
-  ###*****************************
-  
-    
-  ###*****************************
-  counter02=0;
-  flag01=0
-  while(flag01 == 0 & counter02<=100){
-    counter02=counter02+1;
-    tuneObjRF<-try(e1071::tune.randomForest(x=dim_reduced_traintune_DF[-1], 
-                                            y=factor(dim_reduced_traintune_DF[[1]]), 
-                                            ntree= ntreelistRF,
-                                            mtry=mtrylistRF,
-                                            nodesize=nodesizelistRF,
-                                            tunecontrol = tune.control(best.model = TRUE,
-                                                                       performances = TRUE,
-                                                                       sampling=samplingValue,
-                                                                       cross=crossValue,
-                                                                       nrepeat = nrepeatValue,
-                                                                       error.fun = F1ScoreErrCpp)))
-    
-    print(paste0(counter02,"_",class(tuneObjRF)))
-    if(class(tuneObjRF)!="try-error"){flag01=1}
-  }
-  ###*****************************
-  
-  
-  ###*****************************
-  # extracting parameters
-  modelRF<-tuneObjRF$best.model
-  nodesizeRF<-tuneObjRF$best.parameters$nodesize
-  mtryRF<-tuneObjRF$best.parameters$mtry
-  ntreeRF<-as.vector(tuneObjRF$best.parameters$ntree)
-  performanceRF<-1-tuneObjRF$best.performance
-  performanceDfRF<-dplyr::mutate(as.data.frame(tuneObjRF$performances),runNum=counter01)
-  ###*****************************
-  
-  
-  ###*****************************
-  # making predictions with best model
-  modelRF %>%
-    predict(.,dim_reduced_test_DF) %>%
-    data.frame(predictedValue = .) %>%
-    tibble::rownames_to_column(var = "dataSet") %>%
-    dplyr::left_join(meta_df_Test,.) %>%
-    dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
-    dplyr::mutate(TestTrainSubsetNo=counter01) %>%
-    dplyr::mutate(nodesize=nodesizeRF) %>%
-    dplyr::mutate(mtry=mtryRF) %>%
-    dplyr::mutate(ntree=ntreeRF) %>%
-    dplyr::mutate(performance=performanceRF) -> result_i_RF
-  ###*****************************
-  browser()
-  
+  # model 4 -> RF
+  source("pipeline/model_RF.R")
   
   # Parallel Way of combining data
   #******************************************
