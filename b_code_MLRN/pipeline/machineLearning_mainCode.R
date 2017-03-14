@@ -13,7 +13,7 @@ source("pipeline/machineLearning_subCode_initDfprep.R")
 
 #******************************************
 # --MAIN LOOP-- do the parallel processing
-parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %dopar%
+parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do%
 {
   # Find out data sets that will go into machine learning algorithm
   output<-divisionForTest(inputMetaDf,percentTest)
@@ -78,6 +78,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   # Kernel 1 -> "linear"
   ###*****************************
   # tune svm for cost
+  browser()
   tuneObjSVM_linear<-e1071::tune(method = svm,
                        conditionInvestigated~.,
                        data = dim_reduced_traintune_DF,

@@ -55,18 +55,18 @@ winnerModels<-dplyr::bind_rows(winnerModels_int_mrna,
                                winnerModels_int_protein,
                                winnerModels_int_mrna_protein)
 
-winnerModels$experiment <- factor(winnerModels$experiment,
-                                  levels = c("int_mRNA", "int_protein", "int_mRNA_protein"))
+winnerModels$analyzeName <- factor(winnerModels$analyzeName,
+                                   levels = c("int_mRNA", "int_protein", "int_mRNA_protein"))
 
 winnerModels$model <- factor(winnerModels$model,
-                                  levels = c("radial", "sigmoid", "linear", "RF"))
+                             levels = c("radial", "sigmoid", "linear", "RF"))
 ###*****************************
 
 
 ###*****************************
 # generate the increase in success figure
 fig01<-ggplot(winnerModels, aes(x=model, y=performance, group=model))+
-  facet_grid(.~experiment)+
+  facet_grid(.~analyzeName)+
   geom_violin(aes(fill=model, color=model))+
   geom_point(aes(x=model, y=meanPerformance))+
   theme_bw()+

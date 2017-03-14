@@ -43,39 +43,28 @@ source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")
 
 ###*****************************
 # read data
-winnerModels_mrna_exp_carbon = read.csv(file = "../b_results/model_performance_mRNA_exp_carbon.csv")
-winnerModels_mrna_sta_carbon = read.csv(file = "../b_results/model_performance_mRNA_sta_carbon.csv")
-winnerModels_mrna_exp_Mg = read.csv(file = "../b_results/model_performance_mRNA_exp_Mg.csv")
-winnerModels_mrna_sta_Mg = read.csv(file = "../b_results/model_performance_mRNA_sta_Mg.csv")
-winnerModels_mrna_exp_Na = read.csv(file = "../b_results/model_performance_mRNA_exp_Na.csv")
-winnerModels_mrna_sta_Na = read.csv(file = "../b_results/model_performance_mRNA_sta_Na.csv")
+winnerModels_mrna_exp = read.csv(file = "../b_results/model_performance_mRNA_exp.csv")
+winnerModels_mrna_sta = read.csv(file = "../b_results/model_performance_mRNA_sta.csv")
 
-winnerModels_protein_exp_carbon = read.csv(file = "../b_results/model_performance_protein_exp_carbon.csv")
-winnerModels_protein_sta_carbon = read.csv(file = "../b_results/model_performance_protein_sta_carbon.csv")
-winnerModels_protein_exp_Mg = read.csv(file = "../b_results/model_performance_protein_exp_Mg.csv")
-winnerModels_protein_sta_Mg = read.csv(file = "../b_results/model_performance_protein_sta_Mg.csv")
-winnerModels_protein_exp_Na = read.csv(file = "../b_results/model_performance_protein_exp_Na.csv")
-winnerModels_protein_sta_Na = read.csv(file = "../b_results/model_performance_protein_sta_Na.csv")
+winnerModels_protein_exp = read.csv(file = "../b_results/model_performance_protein_exp.csv")
+winnerModels_protein_sta = read.csv(file = "../b_results/model_performance_protein_sta.csv")
 ###*****************************
 
 
 ###*****************************
 # combine data
-winnerModels<-dplyr::bind_rows(winnerModels_mrna_exp_carbon, winnerModels_mrna_exp_Mg,  winnerModels_mrna_exp_Na, 
-                               winnerModels_mrna_sta_carbon, winnerModels_mrna_sta_Mg,  winnerModels_mrna_sta_Na, 
-                               winnerModels_protein_exp_carbon, winnerModels_protein_exp_Mg, winnerModels_protein_exp_Na, 
-                               winnerModels_protein_sta_carbon, winnerModels_protein_sta_Mg, winnerModels_protein_sta_Na)
+winnerModels<-dplyr::bind_rows(winnerModels_mrna_exp,
+                               winnerModels_mrna_sta,
+                               winnerModels_protein_exp, 
+                               winnerModels_protein_sta)
 
 winnerModels %>%
-  dplyr::group_by(experiment)%>%
-  dplyr::mutate(phase=ifelse(grepl(pattern = "*Exp*", x = experiment, ignore.case = TRUE), "Exp", "Sta"))%>%
-  dplyr::mutate(pick_data=ifelse(grepl(pattern = "*mrna*", x = experiment, ignore.case = TRUE), "mRNA", "Protein"))%>%
-  dplyr::mutate(testFor=ifelse(grepl(pattern = "*_carbon*", x = experiment, ignore.case = TRUE), "carbon", "q"),
-                testFor=ifelse(grepl(pattern = "*_Mg*", x = experiment, ignore.case = TRUE), "Mg", testFor),
-                testFor=ifelse(grepl(pattern = "*_Na*", x = experiment, ignore.case = TRUE), "Na", testFor))->winnerModels
+  dplyr::group_by(analyzeName)%>%
+  dplyr::mutate(phase=ifelse(grepl(pattern = "*Exp*", x = analyzeName, ignore.case = TRUE), "Exp", "Sta"))%>%
+  dplyr::mutate(pick_data=ifelse(grepl(pattern = "*mrna*", x = analyzeName, ignore.case = TRUE), "mRNA", "Protein"))->winnerModels
 
 winnerModels%>%
-  dplyr::group_by(phase, pick_data, model, testFor)%>%
+  dplyr::group_by(phase, pick_data, model)%>%
   dplyr::summarise(meanPerformance= mean(performance))->winnerModelsSummary
 
 
@@ -90,11 +79,10 @@ winnerModels%>%
 ###*****************************
 # generate the increase in success figure
 fig01<-ggplot(winnerModelsSummary, aes(x=phase, y=meanPerformance, group=model, colour=model))+
-  facet_grid(testFor~ pick_data)+
+  facet_grid(. ~ pick_data)+
   geom_point(aes(colour=model), size=1.5)+
   geom_line(size=1)+
-  theme_bw()+
-  labs(title = "All conditions")
+  theme_bw()
 
 print(fig01)
 ###*****************************
