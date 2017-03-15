@@ -13,7 +13,7 @@ source("pipeline/machineLearning_subCode_initDfprep.R")
 
 #******************************************
 # --MAIN LOOP-- do the parallel processing
-parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do%
+parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %dopar%
 {
   # Find out data sets that will go into machine learning algorithm
   output<-divisionForTest(inputMetaDf,percentTest)
@@ -57,7 +57,8 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::summarize(samSize=length(conditionInvestigated))->classWeightDf
   if(any(classWeightDf$samSize==1)){stop("no division in between train-tune is possible")}
   
-  tryList=data.frame(tryList=paste0("test_",seq(1,crossValue)))
+  tryList=data.frame(tryList=paste0("test_",seq(1,crossValue)), 
+                     tryListNo=seq(1,crossValue))
   classWeightExpandDf<-merge(classWeightDf,tryList, all=TRUE)
   classWeightExpandDf %>%
     dplyr::group_by(conditionInvestigated,tryList)%>%
@@ -65,18 +66,74 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
                   nTune=ifelse(samSize>2,ceiling(samSize*percentTune),nTune))%>%
     dplyr::mutate(nTrain=samSize-nTune)->classWeightExpandDf
   
+  
   classWeightExpandDf %>%
-    dplyr::group_by(conditionInvestigated) %>%
-    dplyr::mutate(trainWeight=sum(nTrain)/nTrain)->q
+    dplyr::group_by(tryList) %>%
+    dplyr::mutate(weight=sum(nTrain)/nTrain) %>% # weights should be higher for dmsll samples
+    dplyr::mutate(weight=weight/sum(weight))->classWeightExpandDf # sum of the weights should be equal to one
   
+  meta_df_TrainTune_Expand<-merge(meta_df_TrainTune,tryList, all=TRUE)
+  meta_df_TrainTune_Expand <- left_join(meta_df_TrainTune_Expand,classWeightExpandDf)
   
-  classWeightVector<-as.vector(sum(classWeightDf$samSize)/classWeightDf$samSize)
-  names(classWeightVector)<-classWeightDf$conditionInvestigated
-  classWeightVectorRForest=classWeightVector/sum(classWeightVector)
+  dplyr::mutate(tryListNo=)
+  
+  mutate_trainORtune_Function <-function(counter,nTrain)
+  {
+    selection=sample(counter,unique(nTrain))
+    vec=rep("tune",length(counter))
+    vec[selection]<-"train"
+    return(vec)
+  }
   ###*****************************
   
-  browser()
-  # Generate Gamma Cost and kernel vectors
+  
+  ###*****************************
+  # Expand meta DF
+  meta_df_TrainTune_Expand %>%
+    dplyr::arrange(tryList, conditionInvestigated)%>%
+    dplyr::group_by(conditionInvestigated, tryList) %>%
+    dplyr::mutate(counter=seq(1:n()))%>%
+    dplyr::mutate(trainORtune=mutate_trainORtune_Function(counter,nTrain))->meta_df_TrainTune_Expand
+  ###*****************************
+  
+  
+  ###*****************************
+  # Generate train tune data frames in trainTuneDFs
+  do_trainANDtune_function<-function(trainORtune, dataSet, weight, conditionInvestigated)
+  {
+    data.frame(dataSet=dataSet,trainORtune=trainORtune)->mini_traintuneDF
+    dim_reduced_traintune_DF %>%
+      tibble::rownames_to_column(var = "dataSet")%>%
+      dplyr::left_join(.,mini_traintuneDF)->dim_reduced_traintune_DF2
+    
+    dim_reduced_traintune_DF2 %>%
+      dplyr::filter(trainORtune=="train")%>%
+      tibble::column_to_rownames(var = "dataSet")%>%
+      dplyr::select(-trainORtune)->trainSet
+    dim_reduced_traintune_DF2 %>%
+      dplyr::filter(trainORtune=="tune")%>%
+      tibble::column_to_rownames(var = "dataSet")%>%
+      dplyr::select(-trainORtune)->tuneSet
+    
+    data.frame(conditionInvestigated=conditionInvestigated,weight=weight) %>% 
+      dplyr::group_by(conditionInvestigated) %>%
+      dplyr::summarize(weight=unique(weight))-> temp
+    
+    temp$weight->weightVec
+    names(weightVec)<-temp$conditionInvestigated
+    
+    listObj=list(trainSet=trainSet,tuneSet=tuneSet, weightVec=weightVec)
+    return(listObj)
+  }
+  
+  meta_df_TrainTune_Expand%>%
+    dplyr::group_by(tryList,tryListNo)%>%
+    dplyr::do(listDf=do_trainANDtune_function(.$trainORtune,as.vector(.$dataSet), .$weight, .$conditionInvestigated))%>%
+    dplyr::arrange(tryListNo)->trainTuneDFs
+  ###*****************************
+  
+  
+  # Generate Gamma and Cost vectors
   ###*****************************
   # gamma vector
   gammaList=10^seq(from=log10(1/dimensionChoice)+powerRangeGammaLow,
@@ -89,17 +146,430 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   ###*****************************
   
   
+  
   # model 1 -> "linear"
-  source("pipeline/model_linear.R")
+  ###*****************************
+  # A) TUNE
+  
+  linearTuneResults<-merge(data.frame(costList=costList), tryList, all=TRUE)
+  linearTuneResults%>%dplyr::mutate(error.val=NA)->linearTuneResults
+  
+  counter03=0
+  for(counter02a in 1: crossValue)
+  {
+    trainDataFrame=trainTuneDFs$listDf[[counter02a]]$trainSet
+    tuneDataFrame=trainTuneDFs$listDf[[counter02a]]$tuneSet
+    tuneDataFrame%>%
+      dplyr::select(conditionInvestigated)%>%
+      tibble::rownames_to_column(var = "dataSet")->tuneConditionInvestigated
+    tuneDataFrame %>%dplyr::select(-conditionInvestigated)->tuneDataFrame
+    
+    classWeightVector=trainTuneDFs$listDf[[counter02a]]$weightVec
+    
+    for(counter02b in 1:length(costList))
+    {
+      counter03=counter03+1;
+      costValue=linearTuneResults$costList[counter03]
+      
+      modelSVM_tune_linear<-e1071::svm(data = trainDataFrame, 
+                                       conditionInvestigated~., 
+                                       type = type_svmChoice, 
+                                       kernel = "linear",
+                                       class.weights = classWeightVector, 
+                                       cost=costValue)
+      
+      modelSVM_tune_linear %>%
+        predict(.,tuneDataFrame)%>%
+        data.frame(predictedValue = .) %>%
+        tibble::rownames_to_column(var = "dataSet") %>%
+        dplyr::left_join(tuneConditionInvestigated,.)->predictedResults
+      
+      linearTuneResults$error.val[counter03]=F1ScoreErrCpp(predictedResults$conditionInvestigated, 
+                                                           predictedResults$predictedValue)
+      
+    }
+    
+  }
+  
+  # B) PREDICT
+  linearTuneResults %>% 
+    dplyr::group_by(costList)%>%
+    dplyr::summarise(meanErr=mean(error.val))%>%
+    dplyr::group_by()%>%
+    dplyr::filter(meanErr==min(meanErr))%>%
+    .$costList->best_costValue_linear
+  
+  linearTuneResults %>% 
+    dplyr::group_by(costList)%>%
+    dplyr::summarise(meanErr=mean(error.val))%>%
+    dplyr::group_by()%>%
+    dplyr::filter(meanErr==min(meanErr)) %>%
+    .$meanErr -> meanErr_linear
+  best_performance_linear = 1 - meanErr_linear
+  
+  # train all traintuneDf with best cost do predictions on test
+  dim_reduced_traintune_DF%>%
+    dplyr::group_by(conditionInvestigated)%>%
+    dplyr::summarise(numSamp=n())%>%
+    dplyr::mutate(sumNumSamp=sum(numSamp))%>%
+    dplyr::mutate(weight=sumNumSamp/numSamp)%>%
+    dplyr::mutate(weight=weight/sum(weight))->temp
+  
+  temp$weight->classWeightVector
+  names(classWeightVector) <- temp$conditionInvestigated
+  
+  modelSVM_linear<-e1071::svm(data = dim_reduced_traintune_DF, 
+                              conditionInvestigated~., 
+                              type = type_svmChoice, 
+                              kernel = "linear",
+                              class.weights = classWeightVector, 
+                              cost=best_costValue_linear)
+  
+  modelSVM_linear %>%
+    predict(.,dim_reduced_test_DF) %>%
+    data.frame(predictedValue = .) %>%
+    tibble::rownames_to_column(var = "dataSet") %>%
+    dplyr::left_join(meta_df_Test,.) %>%
+    dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
+    dplyr::mutate(TestTrainSubsetNo=counter01) %>%
+    dplyr::mutate(cost=best_costValue_linear) %>%
+    dplyr::mutate(kernel="linear") %>%
+    dplyr::mutate(performance=best_performance_linear) -> result_i_linear
+  ###*****************************
+  
+  
   
   # model 2 -> "radial"
-  source("pipeline/model_radial.R")
+  ###*****************************
+  # A) TUNE
+  
+  radialTuneResults<-merge(data.frame(gammaList=gammaList), 
+                           merge(data.frame(costList=costList), 
+                                 tryList, all=TRUE), 
+                           all=TRUE)
+  radialTuneResults%>%dplyr::mutate(error.val=NA)->radialTuneResults
+  
+  counter03=0
+  for(counter02a in 1: crossValue)
+  {
+    trainDataFrame=trainTuneDFs$listDf[[counter02a]]$trainSet
+    tuneDataFrame=trainTuneDFs$listDf[[counter02a]]$tuneSet
+    tuneDataFrame%>%
+      dplyr::select(conditionInvestigated)%>%
+      tibble::rownames_to_column(var = "dataSet")->tuneConditionInvestigated
+    tuneDataFrame %>%dplyr::select(-conditionInvestigated)->tuneDataFrame
+    
+    classWeightVector=trainTuneDFs$listDf[[counter02a]]$weightVec
+    
+    for(counter02b in 1:length(costList))
+    {
+      for(counter02c in 1:length(gammaList))
+      {
+        counter03=counter03+1;
+        costValue=radialTuneResults$costList[counter03]
+        gammaValue=radialTuneResults$gammaList[counter03]
+        
+        modelSVM_tune_radial<-e1071::svm(data = trainDataFrame, 
+                                         conditionInvestigated~., 
+                                         type = type_svmChoice, 
+                                         kernel = "radial",
+                                         class.weights = classWeightVector, 
+                                         cost=costValue,
+                                         gamma=gammaValue)
+        
+        modelSVM_tune_radial %>%
+          predict(.,tuneDataFrame)%>%
+          data.frame(predictedValue = .) %>%
+          tibble::rownames_to_column(var = "dataSet") %>%
+          dplyr::left_join(tuneConditionInvestigated,.)->predictedResults
+        
+        radialTuneResults$error.val[counter03]=F1ScoreErrCpp(predictedResults$conditionInvestigated, 
+                                                             predictedResults$predictedValue)
+        
+      }
+    }
+    
+  }
+  
+  # B) PREDICT
+  radialTuneResults %>% 
+    dplyr::group_by(costList,gammaList)%>%
+    dplyr::summarise(meanErr=mean(error.val))%>%
+    dplyr::group_by()%>%
+    dplyr::filter(meanErr==min(meanErr))%>%
+    .$costList->best_costValue_radial
+  
+  radialTuneResults %>% 
+    dplyr::group_by(costList,gammaList)%>%
+    dplyr::summarise(meanErr=mean(error.val))%>%
+    dplyr::group_by()%>%
+    dplyr::filter(meanErr==min(meanErr))%>%
+    .$gammaList->best_gammaValue_radial
+  
+  radialTuneResults %>% 
+    dplyr::group_by(costList,gammaList)%>%
+    dplyr::summarise(meanErr=mean(error.val))%>%
+    dplyr::group_by()%>%
+    dplyr::filter(meanErr==min(meanErr)) %>%
+    .$meanErr -> meanErr_radial
+  best_performance_radial = 1 - meanErr_radial
+  
+  # train all traintuneDf with best cost and gamma do predictions on test
+  dim_reduced_traintune_DF%>%
+    dplyr::group_by(conditionInvestigated)%>%
+    dplyr::summarise(numSamp=n())%>%
+    dplyr::mutate(sumNumSamp=sum(numSamp))%>%
+    dplyr::mutate(weight=sumNumSamp/numSamp)%>%
+    dplyr::mutate(weight=weight/sum(weight))->temp
+  
+  temp$weight->classWeightVector
+  names(classWeightVector) <- temp$conditionInvestigated
+  
+  modelSVM_radial<-e1071::svm(data = dim_reduced_traintune_DF, 
+                              conditionInvestigated~., 
+                              type = type_svmChoice, 
+                              kernel = "radial",
+                              class.weights = classWeightVector, 
+                              cost=best_costValue_radial,
+                              gamma=best_gammaValue_radial)
+  
+  modelSVM_radial %>%
+    predict(.,dim_reduced_test_DF) %>%
+    data.frame(predictedValue = .) %>%
+    tibble::rownames_to_column(var = "dataSet") %>%
+    dplyr::left_join(meta_df_Test,.) %>%
+    dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
+    dplyr::mutate(TestTrainSubsetNo=counter01) %>%
+    dplyr::mutate(cost=best_costValue_radial) %>%
+    dplyr::mutate(gamma=best_gammaValue_radial) %>%
+    dplyr::mutate(kernel="radial") %>%
+    dplyr::mutate(performance=best_performance_radial) -> result_i_radial
+  ###*****************************
+  
+  
   
   # model 3 -> "sigmoid"
-  source("pipeline/model_sigmoid.R")
+  ###*****************************
+  # A) TUNE
+  sigmoidTuneResults<-merge(data.frame(gammaList=gammaList), 
+                            merge(data.frame(costList=costList), 
+                                  tryList, all=TRUE), 
+                            all=TRUE)
+  sigmoidTuneResults%>%dplyr::mutate(error.val=NA)->sigmoidTuneResults
+  
+  counter03=0
+  for(counter02a in 1: crossValue)
+  {
+    trainDataFrame=trainTuneDFs$listDf[[counter02a]]$trainSet
+    tuneDataFrame=trainTuneDFs$listDf[[counter02a]]$tuneSet
+    tuneDataFrame%>%
+      dplyr::select(conditionInvestigated)%>%
+      tibble::rownames_to_column(var = "dataSet")->tuneConditionInvestigated
+    tuneDataFrame %>%dplyr::select(-conditionInvestigated)->tuneDataFrame
+    
+    classWeightVector=trainTuneDFs$listDf[[counter02a]]$weightVec
+    
+    for(counter02b in 1:length(costList))
+    {
+      for(counter02c in 1:length(gammaList))
+      {
+        counter03=counter03+1;
+        costValue=sigmoidTuneResults$costList[counter03]
+        gammaValue=sigmoidTuneResults$gammaList[counter03]
+        
+        modelSVM_tune_sigmoid<-e1071::svm(data = trainDataFrame, 
+                                          conditionInvestigated~., 
+                                          type = type_svmChoice, 
+                                          kernel = "sigmoid",
+                                          class.weights = classWeightVector, 
+                                          cost=costValue,
+                                          gamma=gammaValue)
+        
+        modelSVM_tune_sigmoid %>%
+          predict(.,tuneDataFrame)%>%
+          data.frame(predictedValue = .) %>%
+          tibble::rownames_to_column(var = "dataSet") %>%
+          dplyr::left_join(tuneConditionInvestigated,.)->predictedResults
+        
+        sigmoidTuneResults$error.val[counter03]=F1ScoreErrCpp(predictedResults$conditionInvestigated, 
+                                                              predictedResults$predictedValue)
+        
+      }
+    }
+    
+  }
+  
+  # B) PREDICT
+  sigmoidTuneResults %>% 
+    dplyr::group_by(costList,gammaList)%>%
+    dplyr::summarise(meanErr=mean(error.val))%>%
+    dplyr::group_by()%>%
+    dplyr::filter(meanErr==min(meanErr))%>%
+    .$costList->best_costValue_sigmoid
+  
+  sigmoidTuneResults %>% 
+    dplyr::group_by(costList,gammaList)%>%
+    dplyr::summarise(meanErr=mean(error.val))%>%
+    dplyr::group_by()%>%
+    dplyr::filter(meanErr==min(meanErr))%>%
+    .$gammaList->best_gammaValue_sigmoid
+  
+  sigmoidTuneResults %>% 
+    dplyr::group_by(costList,gammaList)%>%
+    dplyr::summarise(meanErr=mean(error.val))%>%
+    dplyr::group_by()%>%
+    dplyr::filter(meanErr==min(meanErr)) %>%
+    .$meanErr -> meanErr_sigmoid
+  best_performance_sigmoid = 1 - meanErr_sigmoid
+  
+  # train all traintuneDf with best cost gamma and do predictions on test
+  dim_reduced_traintune_DF%>%
+    dplyr::group_by(conditionInvestigated)%>%
+    dplyr::summarise(numSamp=n())%>%
+    dplyr::mutate(sumNumSamp=sum(numSamp))%>%
+    dplyr::mutate(weight=sumNumSamp/numSamp)%>%
+    dplyr::mutate(weight=weight/sum(weight))->temp
+  
+  temp$weight->classWeightVector
+  names(classWeightVector) <- temp$conditionInvestigated
+  
+  modelSVM_sigmoid<-e1071::svm(data = dim_reduced_traintune_DF, 
+                               conditionInvestigated~., 
+                               type = type_svmChoice, 
+                               kernel = "sigmoid",
+                               class.weights = classWeightVector, 
+                               cost=best_costValue_sigmoid,
+                               gamma=best_gammaValue_sigmoid)
+  
+  modelSVM_sigmoid %>%
+    predict(.,dim_reduced_test_DF) %>%
+    data.frame(predictedValue = .) %>%
+    tibble::rownames_to_column(var = "dataSet") %>%
+    dplyr::left_join(meta_df_Test,.) %>%
+    dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
+    dplyr::mutate(TestTrainSubsetNo=counter01) %>%
+    dplyr::mutate(cost=best_costValue_sigmoid) %>%
+    dplyr::mutate(gamma=best_gammaValue_sigmoid) %>%
+    dplyr::mutate(kernel="sigmoid") %>%
+    dplyr::mutate(performance=best_performance_sigmoid) -> result_i_sigmoid
+  ###*****************************
+  
   
   # model 4 -> RF
-  source("pipeline/model_RF.R")
+  ###*****************************
+  RFTuneResults<-merge(data.frame(ntree=ntreelistRF), 
+                       merge(data.frame(mtry=mtrylistRF), 
+                             merge(data.frame(nodesize=nodesizelistRF),tryList, 
+                                   all=TRUE), 
+                             all=TRUE), 
+                       all=TRUE)
+  RFTuneResults%>%dplyr::mutate(error.val=NA)->RFTuneResults
+  
+  counter03=0
+  for(counter02a in 1: crossValue)
+  {
+    trainDataFrame=trainTuneDFs$listDf[[counter02a]]$trainSet
+    tuneDataFrame=trainTuneDFs$listDf[[counter02a]]$tuneSet
+    tuneDataFrame%>%
+      dplyr::select(conditionInvestigated)%>%
+      tibble::rownames_to_column(var = "dataSet")->tuneConditionInvestigated
+    tuneDataFrame %>%dplyr::select(-conditionInvestigated)->tuneDataFrame
+    
+    classWeightVector=trainTuneDFs$listDf[[counter02a]]$weightVec
+    
+    for(counter02b in 1:length(nodesizelistRF))
+    {
+      for(counter02c in 1:length(mtrylistRF))
+      {
+        for(counter02d in 1:length(ntreelistRF))
+        {
+          counter03=counter03+1;
+          nodesizeValue=RFTuneResults$nodesize[counter03]
+          mtryValue=RFTuneResults$mtry[counter03]
+          ntreeValue=RFTuneResults$ntree[counter03]
+          
+          modelSVM_tune_RF<-randomForest::randomForest(x=trainDataFrame[-1], y=factor(trainDataFrame[[1]]),
+                                                       ntree= ntreeValue,
+                                                       mtry=mtryValue,
+                                                       nodesize=nodesizeValue,
+                                                       classwt=classWeightVector)
+          
+          
+          modelSVM_tune_RF %>%
+            predict(.,tuneDataFrame)%>%
+            data.frame(predictedValue = .) %>%
+            tibble::rownames_to_column(var = "dataSet") %>%
+            dplyr::left_join(tuneConditionInvestigated,.)->predictedResults
+          
+          RFTuneResults$error.val[counter03]=F1ScoreErrCpp(predictedResults$conditionInvestigated, 
+                                                           predictedResults$predictedValue)
+          
+        }
+      }
+    }
+    
+  }
+  
+  # B) PREDICT
+  RFTuneResults %>% 
+    dplyr::group_by(ntree,mtry,nodesize)%>%
+    dplyr::summarise(meanErr=mean(error.val))%>%
+    dplyr::group_by()%>%
+    dplyr::filter(meanErr==min(meanErr))%>%
+    .$ntree->best_ntreeValue_RF
+  
+  RFTuneResults %>% 
+    dplyr::group_by(ntree,mtry,nodesize)%>%
+    dplyr::summarise(meanErr=mean(error.val))%>%
+    dplyr::group_by()%>%
+    dplyr::filter(meanErr==min(meanErr))%>%
+    .$mtry->best_mtryValue_RF
+  
+  RFTuneResults %>% 
+    dplyr::group_by(ntree,mtry,nodesize)%>%
+    dplyr::summarise(meanErr=mean(error.val))%>%
+    dplyr::group_by()%>%
+    dplyr::filter(meanErr==min(meanErr))%>%
+    .$nodesize->best_nodesizeValue_RF
+  
+  RFTuneResults %>% 
+    dplyr::group_by(ntree,mtry,nodesize)%>%
+    dplyr::summarise(meanErr=mean(error.val))%>%
+    dplyr::group_by()%>%
+    dplyr::filter(meanErr==min(meanErr)) %>%
+    .$meanErr -> meanErr_RF
+  best_performance_RF = 1 - meanErr_RF
+  
+  # train all traintuneDf with best ntree, mtry, nodesize and do predictions on test
+  dim_reduced_traintune_DF%>%
+    dplyr::group_by(conditionInvestigated)%>%
+    dplyr::summarise(numSamp=n())%>%
+    dplyr::mutate(sumNumSamp=sum(numSamp))%>%
+    dplyr::mutate(weight=sumNumSamp/numSamp)%>%
+    dplyr::mutate(weight=weight/sum(weight))->temp
+  
+  temp$weight->classWeightVector
+  names(classWeightVector) <- temp$conditionInvestigated
+  
+  modelSVM_RF<-randomForest::randomForest(x=dim_reduced_traintune_DF[-1], y=factor(dim_reduced_traintune_DF[[1]]),
+                                          ntree= best_ntreeValue_RF,
+                                          mtry=best_mtryValue_RF,
+                                          nodesize=best_nodesizeValue_RF,
+                                          classwt=classWeightVector)
+  
+  modelSVM_RF %>%
+    predict(.,dim_reduced_test_DF) %>%
+    data.frame(predictedValue = .) %>%
+    tibble::rownames_to_column(var = "dataSet") %>%
+    dplyr::left_join(meta_df_Test,.) %>%
+    dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
+    dplyr::mutate(TestTrainSubsetNo=counter01) %>%
+    dplyr::mutate(ntreeValue=best_ntreeValue_RF) %>%
+    dplyr::mutate(mtryValue=best_mtryValue_RF) %>%
+    dplyr::mutate(nodesizeValue=best_nodesizeValue_RF) %>%
+    dplyr::mutate(performance=best_performance_RF) -> result_i_RF
+  ###*****************************
+  
   
   # Parallel Way of combining data
   #******************************************
@@ -110,10 +580,10 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
        resultListRF=result_i_RF,
        #modelsvm=modelSVM,
        #modelrf=modelRF,
-       performanceDf_linear=performanceDfSVM_linear,
-       performanceDf_radial=performanceDfSVM_radial,
-       performanceDf_sigmoid=performanceDfSVM_sigmoid,
-       performanceDfRF=performanceDfRF)
+       performanceDf_linear=linearTuneResults,
+       performanceDf_radial=radialTuneResults,
+       performanceDf_sigmoid=sigmoidTuneResults,
+       performanceDfRF=RFTuneResults)
   #******************************************
 }
 ###*****************************####

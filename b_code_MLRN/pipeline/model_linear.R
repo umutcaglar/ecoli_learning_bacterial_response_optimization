@@ -1,7 +1,12 @@
 # model linear
 
 ###*****************************
-###*****************************
+
+browser()
+for(counter02 in 1:length(costList))
+{
+  a=3
+}
 
 
 
