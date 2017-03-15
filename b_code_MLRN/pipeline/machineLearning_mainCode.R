@@ -15,6 +15,7 @@ source("pipeline/machineLearning_subCode_initDfprep.R")
 # --MAIN LOOP-- do the parallel processing
 parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %dopar%
 {
+  print(counter01)
   # Find out data sets that will go into machine learning algorithm
   output<-divisionForTest(inputMetaDf,percentTest)
   
@@ -48,7 +49,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   dim_reduced_test_DF = dim_reduced_DF_obj$dim_reduced_test_DF
   dimensionChoice = dim_reduced_DF_obj$dimensionChoice
   ###***************************** 
-  
+
   
   ###*****************************
   # Generate Class Weight Vector
@@ -56,6 +57,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::group_by(conditionInvestigated)%>%
     dplyr::summarize(samSize=length(conditionInvestigated))->classWeightDf
   if(any(classWeightDf$samSize==1)){stop("no division in between train-tune is possible")}
+
   
   tryList=data.frame(tryList=paste0("test_",seq(1,crossValue)), 
                      tryListNo=seq(1,crossValue))
@@ -65,17 +67,17 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::mutate(nTune=ifelse(samSize==2,as.vector(sample(0:1,1),mode="numeric"),-1),
                   nTune=ifelse(samSize>2,ceiling(samSize*percentTune),nTune))%>%
     dplyr::mutate(nTrain=samSize-nTune)->classWeightExpandDf
-  
+
   
   classWeightExpandDf %>%
     dplyr::group_by(tryList) %>%
     dplyr::mutate(weight=sum(nTrain)/nTrain) %>% # weights should be higher for dmsll samples
     dplyr::mutate(weight=weight/sum(weight))->classWeightExpandDf # sum of the weights should be equal to one
+
   
   meta_df_TrainTune_Expand<-merge(meta_df_TrainTune,tryList, all=TRUE)
   meta_df_TrainTune_Expand <- left_join(meta_df_TrainTune_Expand,classWeightExpandDf)
   
-  dplyr::mutate(tryListNo=)
   
   mutate_trainORtune_Function <-function(counter,nTrain)
   {
@@ -85,7 +87,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     return(vec)
   }
   ###*****************************
-  
+
   
   ###*****************************
   # Expand meta DF
@@ -95,7 +97,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::mutate(counter=seq(1:n()))%>%
     dplyr::mutate(trainORtune=mutate_trainORtune_Function(counter,nTrain))->meta_df_TrainTune_Expand
   ###*****************************
-  
+
   
   ###*****************************
   # Generate train tune data frames in trainTuneDFs
@@ -131,7 +133,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::do(listDf=do_trainANDtune_function(.$trainORtune,as.vector(.$dataSet), .$weight, .$conditionInvestigated))%>%
     dplyr::arrange(tryListNo)->trainTuneDFs
   ###*****************************
-  
+
   
   # Generate Gamma and Cost vectors
   ###*****************************
@@ -144,7 +146,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
                   to=powerRangeCostHigh,
                   length.out = ndivision)
   ###*****************************
-  
+
   
   
   # model 1 -> "linear"
@@ -190,22 +192,21 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     }
     
   }
+
   
   # B) PREDICT
   linearTuneResults %>% 
     dplyr::group_by(costList)%>%
     dplyr::summarise(meanErr=mean(error.val))%>%
     dplyr::group_by()%>%
-    dplyr::filter(meanErr==min(meanErr))%>%
-    .$costList->best_costValue_linear
-  
-  linearTuneResults %>% 
-    dplyr::group_by(costList)%>%
-    dplyr::summarise(meanErr=mean(error.val))%>%
-    dplyr::group_by()%>%
     dplyr::filter(meanErr==min(meanErr)) %>%
-    .$meanErr -> meanErr_linear
+    dplyr::sample_n(size=1)-> linearTuneWinner
+
+  
+  linearTuneWinner %>% .$costList -> best_costValue_linear
+  linearTuneWinner %>% .$meanErr -> meanErr_linear; 
   best_performance_linear = 1 - meanErr_linear
+  
   
   # train all traintuneDf with best cost do predictions on test
   dim_reduced_traintune_DF%>%
@@ -231,12 +232,15 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     tibble::rownames_to_column(var = "dataSet") %>%
     dplyr::left_join(meta_df_Test,.) %>%
     dplyr::mutate(TrueFalse=ifelse(predictedValue==conditionInvestigated,1,0)) %>%
-    dplyr::mutate(TestTrainSubsetNo=counter01) %>%
+    dplyr::mutate(TestTrainSubsetNo=counter01) -> modelSVM_linear
+  
+  
+  modelSVM_linear%>%
     dplyr::mutate(cost=best_costValue_linear) %>%
     dplyr::mutate(kernel="linear") %>%
     dplyr::mutate(performance=best_performance_linear) -> result_i_linear
-  ###*****************************
   
+  ###*****************************
   
   
   # model 2 -> "radial"
@@ -297,21 +301,11 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::summarise(meanErr=mean(error.val))%>%
     dplyr::group_by()%>%
     dplyr::filter(meanErr==min(meanErr))%>%
-    .$costList->best_costValue_radial
+    dplyr::sample_n(size=1)->radialTuneWinner
   
-  radialTuneResults %>% 
-    dplyr::group_by(costList,gammaList)%>%
-    dplyr::summarise(meanErr=mean(error.val))%>%
-    dplyr::group_by()%>%
-    dplyr::filter(meanErr==min(meanErr))%>%
-    .$gammaList->best_gammaValue_radial
-  
-  radialTuneResults %>% 
-    dplyr::group_by(costList,gammaList)%>%
-    dplyr::summarise(meanErr=mean(error.val))%>%
-    dplyr::group_by()%>%
-    dplyr::filter(meanErr==min(meanErr)) %>%
-    .$meanErr -> meanErr_radial
+  radialTuneWinner %>% .$costList -> best_costValue_radial
+  radialTuneWinner %>% .$gammaList -> best_gammaValue_radial
+  radialTuneWinner %>% .$meanErr -> meanErr_radial
   best_performance_radial = 1 - meanErr_radial
   
   # train all traintuneDf with best cost and gamma do predictions on test
@@ -345,7 +339,6 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::mutate(kernel="radial") %>%
     dplyr::mutate(performance=best_performance_radial) -> result_i_radial
   ###*****************************
-  
   
   
   # model 3 -> "sigmoid"
@@ -405,22 +398,13 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::summarise(meanErr=mean(error.val))%>%
     dplyr::group_by()%>%
     dplyr::filter(meanErr==min(meanErr))%>%
-    .$costList->best_costValue_sigmoid
+    dplyr::sample_n(size=1)->sigmoidTuneWinner
   
-  sigmoidTuneResults %>% 
-    dplyr::group_by(costList,gammaList)%>%
-    dplyr::summarise(meanErr=mean(error.val))%>%
-    dplyr::group_by()%>%
-    dplyr::filter(meanErr==min(meanErr))%>%
-    .$gammaList->best_gammaValue_sigmoid
-  
-  sigmoidTuneResults %>% 
-    dplyr::group_by(costList,gammaList)%>%
-    dplyr::summarise(meanErr=mean(error.val))%>%
-    dplyr::group_by()%>%
-    dplyr::filter(meanErr==min(meanErr)) %>%
-    .$meanErr -> meanErr_sigmoid
+  sigmoidTuneWinner %>% .$costList -> best_costValue_sigmoid
+  sigmoidTuneWinner %>% .$gammaList -> best_gammaValue_sigmoid
+  sigmoidTuneWinner %>% .$meanErr -> meanErr_sigmoid
   best_performance_sigmoid = 1 - meanErr_sigmoid
+
   
   # train all traintuneDf with best cost gamma and do predictions on test
   dim_reduced_traintune_DF%>%
@@ -453,7 +437,6 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::mutate(kernel="sigmoid") %>%
     dplyr::mutate(performance=best_performance_sigmoid) -> result_i_sigmoid
   ###*****************************
-  
   
   # model 4 -> RF
   ###*****************************
@@ -516,29 +499,14 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::summarise(meanErr=mean(error.val))%>%
     dplyr::group_by()%>%
     dplyr::filter(meanErr==min(meanErr))%>%
-    .$ntree->best_ntreeValue_RF
+    dplyr::sample_n(size=1) -> RFTuneWinner
   
-  RFTuneResults %>% 
-    dplyr::group_by(ntree,mtry,nodesize)%>%
-    dplyr::summarise(meanErr=mean(error.val))%>%
-    dplyr::group_by()%>%
-    dplyr::filter(meanErr==min(meanErr))%>%
-    .$mtry->best_mtryValue_RF
-  
-  RFTuneResults %>% 
-    dplyr::group_by(ntree,mtry,nodesize)%>%
-    dplyr::summarise(meanErr=mean(error.val))%>%
-    dplyr::group_by()%>%
-    dplyr::filter(meanErr==min(meanErr))%>%
-    .$nodesize->best_nodesizeValue_RF
-  
-  RFTuneResults %>% 
-    dplyr::group_by(ntree,mtry,nodesize)%>%
-    dplyr::summarise(meanErr=mean(error.val))%>%
-    dplyr::group_by()%>%
-    dplyr::filter(meanErr==min(meanErr)) %>%
-    .$meanErr -> meanErr_RF
+  RFTuneWinner %>% .$ntree -> best_ntreeValue_RF
+  RFTuneWinner %>% .$mtry -> best_mtryValue_RF
+  RFTuneWinner %>% .$nodesize -> best_nodesizeValue_RF
+  RFTuneWinner %>% .$meanErr -> meanErr_RF
   best_performance_RF = 1 - meanErr_RF
+  
   
   # train all traintuneDf with best ntree, mtry, nodesize and do predictions on test
   dim_reduced_traintune_DF%>%
@@ -569,7 +537,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::mutate(nodesizeValue=best_nodesizeValue_RF) %>%
     dplyr::mutate(performance=best_performance_RF) -> result_i_RF
   ###*****************************
-  
+
   
   # Parallel Way of combining data
   #******************************************
