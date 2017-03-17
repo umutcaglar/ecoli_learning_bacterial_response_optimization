@@ -15,9 +15,13 @@ for (counter01 in 1:timeStampVector$numRepeatsFor_TestTrainSubset_Choice)
     result_List_RF=parallel_Result[[counter01]]$resultListRF
     
     performanceDf_linear=parallel_Result[[counter01]]$performanceDf_linear
+    performanceDf_linear$runNum=1
     performanceDf_radial=parallel_Result[[counter01]]$performanceDf_radial
+    performanceDf_radial$runNum=1
     performanceDf_sigmoid=parallel_Result[[counter01]]$performanceDf_sigmoid
+    performanceDf_sigmoid$runNum=1
     performanceDf_RF=parallel_Result[[counter01]]$performanceDfRF
+    performanceDf_RF$runNum=1
   }
   
   if(counter01!=1)
@@ -27,10 +31,21 @@ for (counter01 in 1:timeStampVector$numRepeatsFor_TestTrainSubset_Choice)
     result_List_sigmoid=dplyr::bind_rows(result_List_sigmoid, parallel_Result[[counter01]]$resultListSVM_sigmoid)
     result_List_RF=dplyr::bind_rows(result_List_RF,parallel_Result[[counter01]]$resultListRF)
     
-    performanceDf_linear=dplyr::bind_rows(performanceDf_linear, parallel_Result[[counter01]]$performanceDf_linear)
-    performanceDf_radial=dplyr::bind_rows(performanceDf_radial, parallel_Result[[counter01]]$performanceDf_radial)
-    performanceDf_sigmoid=dplyr::bind_rows(performanceDf_sigmoid, parallel_Result[[counter01]]$performanceDf_sigmoid)
-    performanceDf_RF=dplyr::bind_rows(performanceDf_RF, parallel_Result[[counter01]]$performanceDfRF)
+    performanceDf_linear_temp = parallel_Result[[counter01]]$performanceDf_linear
+    performanceDf_linear_temp$runNum=counter01
+    performanceDf_linear=dplyr::bind_rows(performanceDf_linear, performanceDf_linear_temp)
+    
+    performanceDf_radial_temp = parallel_Result[[counter01]]$performanceDf_radial
+    performanceDf_radial_temp$runNum=counter01
+    performanceDf_radial=dplyr::bind_rows(performanceDf_radial, performanceDf_radial_temp)
+    
+    performanceDf_sigmoid_temp = parallel_Result[[counter01]]$performanceDf_sigmoid
+    performanceDf_sigmoid_temp$runNum=counter01
+    performanceDf_sigmoid=dplyr::bind_rows(performanceDf_sigmoid, performanceDf_sigmoid_temp)
+    
+    performanceDf_RF_temp = parallel_Result[[counter01]]$performanceDfRF
+    performanceDf_RF_temp$runNum=counter01
+    performanceDf_RF=dplyr::bind_rows(performanceDf_RF, performanceDf_RF_temp)
   }
 }
 
@@ -56,6 +71,10 @@ result_List<-dplyr::bind_rows(result_List_linear,
                               result_List_RF)
 result_List$kernel<-NULL
 
+colnames(result_List)[which(colnames(result_List)=="ntreeValue")] <- "ntree"
+colnames(result_List)[which(colnames(result_List)=="mtryValue")] <- "mtry"
+colnames(result_List)[which(colnames(result_List)=="nodesizeValue")] <- "nodesize"
+
 # b) Performance data frame performance of all distinct runs
 performanceDf_linear$model="linear"
 performanceDf_radial$model="radial"
@@ -66,6 +85,15 @@ performanceDf<-dplyr::bind_rows(performanceDf_linear,
                                 performanceDf_radial,
                                 performanceDf_sigmoid, 
                                 performanceDf_RF)
+
+performanceDf %>% 
+  dplyr::select(runNum,model,
+                cost=costList,gamma=gammaList,
+                nodesize, mtry, ntree,
+                error=error.val,tryList, tryListNo) %>%
+  dplyr::group_by(runNum, model, 
+                  cost, gamma, nodesize, mtry, ntree) %>%
+  dplyr::summarize(error=mean(error), dispersion=sd(error))->performanceDf
 
 performanceDf  %>%
   dplyr::mutate(performance=1-error,
@@ -506,7 +534,7 @@ if(!doNotSave==1)
 }
 ###*****************************
 
-browser()
+
 ###*****************************
 # Save the meta parameters for analyze
 # a) generate meta vector for individual analyze and but it into data file
