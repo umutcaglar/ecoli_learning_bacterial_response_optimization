@@ -4,17 +4,17 @@
 # This part will be repeated many times with for loop
 #     It take the data (mRNA or Protein), divide the data into 2 parts (intelligently) as training & control
 #     This part will be repeated many times with for loop
-#       In the training data, some of the data is trashed (randomly) in order to make the number of elements in 
+#       In the training data, some of the data is trashed (randomly) in order to make the number of elements in
 #       each group comparible
 #       remaining data will be used for training
 #       after PCA or PCoA (If they have a difference)
 #       we will pick top columns for analyse (sqrt n columns)
 #       depending on the data type we will use discreate SVM or continious SVM (Both are in radial basis)
-#       Than we will use the control set to see 
+#       Than we will use the control set to see
 
 
 ### ****************************
-# In this code I will do PCA or PCoA before seperating data. 
+# In this code I will do PCA or PCoA before seperating data.
 # This improves the results. In future it will be replaced with proper rotation of test matrix
 ### ****************************
 
@@ -79,7 +79,7 @@ source("pipeline/batchCorrectionSVA.R")
 source("pipeline/dataPreperationComb_func.R")
 source("pipeline/dataPreperation_func.R")
 source("../a_code_dataPreperation_RNA&Protein/data_naming_functions.R")
-source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")	
+source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")
 ###*****************************
 
 
@@ -99,23 +99,23 @@ getDoParWorkers() # check how many cores (workers) are registered
 ###*****************************
 # Find the csv files that need to be imported
 dataName=name_data(initialValue=c("resDf"), # can be c("genes0.05","genes_P0.05Fold2","resDf")
-                   dataType = "mrna", 
-                   # can be "rna", "mrna", "protein", "protein_wo_NA", 
-                   #        "int_mrna_protein", "int_mrna", "int_protein" 
+                   dataType = "mrna",
+                   # can be "rna", "mrna", "protein", "protein_wo_NA",
+                   #        "int_mrna_protein", "int_mrna", "int_protein"
                    badDataSet = "set00", # can be "set00",set01","set02", "set03"
                    # referenceParameters can be a vector like
                    # c("growthPhase", "Mg_mM_Levels", "Na_mM_Levels", "carbonSource", "experiment")
                    referenceParameters=c("growthPhase",
-                                         "Mg_mM_Levels", 
-                                         "Na_mM_Levels", 
+                                         "Mg_mM_Levels",
+                                         "Na_mM_Levels",
                                          "carbonSource",
                                          "experiment"),
                    # referenceLevels can be a vector like
                    # c("exponential", "baseMg", "baseNa", "glucose", "glucose_time_course")
                    referenceLevels=c("exponential",
-                                     "baseMg", 
-                                     "baseNa", 
-                                     "glucose", 
+                                     "baseMg",
+                                     "baseNa",
+                                     "glucose",
                                      "glucose_time_course"),
                    # Can be "glucose_time_course", "MgSO4_stress_low", "MgSO4_stress_high"
                    experimentVector = c("allEx"), # can be "Stc","Ytc","Nas","Agr","Ngr","Mgl","Mgh" // "allEx"
@@ -147,10 +147,11 @@ condition=read.csv(file = paste0("../a_results/",metaDataName,".csv"),header = T
 ###*****************************
 # Trial Reletad Parameters
 #dimensionChoice=11
-numRepeatsFor_TestTrainSubset_Choice=60 #how many times will I divide the data as train&tune vs test
+numRepeatsFor_TestTrainSubset_Choice=60 #60 #how many times will I divide the data as train&tune vs test
 percentTest=.20 #Should be a number between 0-1
+percentTune=.20 #Should be a number between 0-1
 # sum of percentTest and percentTune shoul not be smaller than 1
-testConditions=c("carbonSource") # different combinations that we will look into 
+testConditions=c("carbonSource") # different combinations that we will look into
 # Options carbonSource, growthPhase, Mg_mM_Levels, Na_mM_Levels
 dimReductionType="PCA" # Can be PCA, PCoA, noReduction
 dimensionChoiceValue=10 # does not work with dimReductionType="noReduction"
@@ -160,30 +161,31 @@ classWeightInputType="on SVA" # for probabilistic it should be after SVA
 similarDataClassifierForBatch=c("Na_mM","Mg_mM","carbonSource_Short","growthPhase")
 
 # SVM parameters
-type_svmChoice="C-classification" #Can be "C-classification" but not "eps-regression" 
+type_svmChoice="C-classification" #Can be "C-classification" but not "eps-regression"
 #kernel_typeChoice="radial"
 
 # SVM tune paramteres
-crossValue=10;
+crossValue=10; #10
 nrepeatValue=1;
 samplingValue="cross"
 
 # SVM parameter Span
-powerRangeGammaLow=-2 # the span of parameters 2 means data will span 10^-2 to 10^2
+powerRangeGammaLow=-3 # the span of parameters 2 means data will span 10^-2 to 10^2
 powerRangeGammaHigh=2 # the span of parameters 2 means data will span 10^-2 to 10^2
-powerRangeCostLow=-2 # the span of parameters 2 means data will span 10^-2 to 10^2
-powerRangeCostHigh=2 # the span of parameters 2 means data will span 10^-2 to 10^2
-ndivision=25 # number of division points within the interval (if 5 we will have 10^-2, 10^-1, 10^0, 10^1, 10^2)
+powerRangeCostLow=-1 # the span of parameters 2 means data will span 10^-2 to 10^2
+powerRangeCostHigh=8 # the span of parameters 2 means data will span 10^-2 to 10^2
+ndivisionCost=55 #31 # number of division points within the interval cost (if 5 we will have 10^-2, 10^-1, 10^0, 10^1, 10^2)
+ndivisionGamma=31 #number of division points within the interval gamma
 kernelList=c("linear","radial","sigmoid") # kernel vector
 
 # RF Tune parameters
-ntreelistRF=c(1000, 5000, 10000)
-nodesizelistRF=c(1,2,3,4,5)
-mtrylistRF=c(3,4,5,6,7)
+ntreelistRF=c(1000, 5000, 10000) # c(1000, 5000, 10000)
+nodesizelistRF=c(1,2,3,4,5) # c(1,2,3,4,5)
+mtrylistRF=c(1,2,3,4,5,6,7) # c(1,2,3,4,5,6,7)
 
 # combined set related variables
 batchCorrectionType="separate" # can be together or separate for joined datasets
-if(!(grepl(pattern = "mrna",x = dataNameDF$objectName.pick_data) & 
+if(!(grepl(pattern = "mrna",x = dataNameDF$objectName.pick_data) &
      grepl(pattern = "protein",x = dataNameDF$objectName.pick_data)))
 {batchCorrectionType = "together"}
 

@@ -6,7 +6,7 @@
 # INITIAL COMMANDS TO RESET THE SYSTEM
 rm(list = ls())
 if (is.integer(dev.list())){dev.off()}
-cat("\014")
+#cat("\014")
 seedNo=14159
 set.seed(seedNo)
 ###*****************************
@@ -53,7 +53,8 @@ analyzeName="mRNA"
 pick_data="mrna"
 growthPhase="ExpAllPhase"
 testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase")
-ndivision=31
+ndivisionCost=55
+ndivisionGamma=31
 numRepeatsFor_TestTrainSubset_Choice=60
 doNotSave=0 # save the square table figures. 1 means DO NOT save
 
@@ -68,10 +69,11 @@ timeStampFile %>%
   dplyr::filter(pick_data==get("pick_data")) %>%
   dplyr::filter(growthPhase_names==get("growthPhase")) %>%
   dplyr::filter(numRepeatsFor_TestTrainSubset_Choice==get("numRepeatsFor_TestTrainSubset_Choice")) %>%
-  dplyr::filter(ndivision==get("ndivision")) %>%
+  dplyr::filter(ndivisionCost==get("ndivisionCost")) %>%
+  dplyr::filter(ndivisionGamma==get("ndivisionGamma")) %>%
   dplyr::filter(testConditions==get("testConditionsCombined"))->chosenDataSetInfo
 
-chosenDataSetInfo<-chosenDataSetInfo[2,]
+
 
 if(nrow(chosenDataSetInfo)!=1){stop("one than one file selected")}
 

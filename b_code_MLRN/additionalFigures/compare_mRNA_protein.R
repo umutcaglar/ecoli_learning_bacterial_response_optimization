@@ -37,7 +37,7 @@ require("stringr")
 
 ###*****************************
 #Load Functions
-source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")	
+source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")
 ###*****************************
 
 
@@ -50,7 +50,7 @@ winnerModels_mrna = read.csv(file = "../b_results/model_performance_protein.csv"
 
 ###*****************************
 # combine data
-winnerModels<-dplyr::bind_rows(winnerModels_mrna, 
+winnerModels<-dplyr::bind_rows(winnerModels_mrna,
                                winnerModels_protein)
 
 winnerModels$analyzeName <- factor(winnerModels$analyzeName,
@@ -63,10 +63,10 @@ winnerModels$model <- factor(winnerModels$model,
 
 ###*****************************
 # generate the increase in success figure
-fig01<-ggplot(winnerModels, aes(x=model, y=performance, group=model))+
+fig01<-ggplot(winnerModels, aes(x=model, y=performance_test, group=model))+
   facet_grid(.~analyzeName)+
   geom_violin(aes(fill=model, color=model))+
-  geom_point(aes(x=model, y=meanPerformance))+
+  geom_point(aes(x=model, y=meanPerformance_test))+
   theme_bw()+
   labs(title = "All conditions")
 
@@ -106,7 +106,7 @@ print(combinedSquarePlots)
 
 ###*****************************
 # Save figure
-cowplot::save_plot(filename = "../b_figures/combined_mRNA_protein_square.jpeg", 
+cowplot::save_plot(filename = "../b_figures/combined_mRNA_protein_square.jpeg",
                    plot = combinedSquarePlots, ncol = 2, nrow = 2.8)
 ###*****************************
 

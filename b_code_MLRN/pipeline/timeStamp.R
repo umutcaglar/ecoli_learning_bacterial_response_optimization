@@ -1,8 +1,8 @@
 print("a")
 
 timeStampVector=dataNameDF[2:length(dataNameDF)]
-colnames(timeStampVector)<-gsub(pattern = "objectName.", 
-                                replacement = "", 
+colnames(timeStampVector)<-gsub(pattern = "objectName.",
+                                replacement = "",
                                 colnames(timeStampVector))
 timeStampVector$numRepeatsFor_TestTrainSubset_Choice=numRepeatsFor_TestTrainSubset_Choice
 timeStampVector$percentTest=percentTest
@@ -23,7 +23,8 @@ timeStampVector$powerRangeGammaLow=powerRangeGammaLow
 timeStampVector$powerRangeGammaHigh=powerRangeGammaHigh
 timeStampVector$powerRangeCostLow=powerRangeCostLow
 timeStampVector$powerRangeCostHigh=powerRangeCostHigh
-timeStampVector$ndivision=ndivision
+timeStampVector$ndivisionCost=ndivisionCost
+timeStampVector$ndivisionGamma=ndivisionGamma
 timeStampVector$kernelList=paste0(kernelList,collapse = "_")
 
 # RF Related parameters
@@ -45,11 +46,11 @@ timeStampVector$ncore=getDoParWorkers()
 
 #seed
 timeStampVector$seedNo=seedNo
-  
+
 # file Name
 options(digits.secs=6)
-time1<-Sys.time(); 
-print(time1); 
+time1<-Sys.time();
+print(time1);
 time2<-gsub(pattern = "*.*\\.",replacement = "", x = time1);
 time3<-paste0(format(time1, "%Y_%m_%d_%H_%M_%S"),"_",time2)
 fileName=paste0("RunNo_",time3)

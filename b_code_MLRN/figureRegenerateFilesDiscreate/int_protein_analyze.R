@@ -42,7 +42,7 @@ require("Rcpp")
 
 ###*****************************
 #Load Functions
-source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")	
+source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")
 sourceCpp("pipeline/f1ScoreFunction.cpp")
 ###*****************************
 
@@ -53,9 +53,12 @@ analyzeName="int_protein"
 pick_data="int_protein"
 growthPhase="ExpAllPhase"
 testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase")
-ndivision=31
+ndivisionCost=55
+ndivisionGamma=31
 numRepeatsFor_TestTrainSubset_Choice=60
 doNotSave=0 # save the square table figures. 1 means DO NOT save
+
+testConditionsCombined=paste0(testConditions,collapse = "_")
 ###*****************************
 
 
@@ -66,8 +69,10 @@ timeStampFile %>%
   dplyr::filter(pick_data==get("pick_data")) %>%
   dplyr::filter(growthPhase_names==get("growthPhase")) %>%
   dplyr::filter(numRepeatsFor_TestTrainSubset_Choice==get("numRepeatsFor_TestTrainSubset_Choice")) %>%
-  dplyr::filter(ndivision==get("ndivision")) %>%
-  dplyr::filter(testConditions==paste0(testConditions,collapse = "_"))->chosenDataSetInfo
+  dplyr::filter(ndivisionCost==get("ndivisionCost")) %>%
+  dplyr::filter(ndivisionGamma==get("ndivisionGamma")) %>%
+  dplyr::filter(testConditions==get("testConditionsCombined"))->chosenDataSetInfo
+
 
 if(nrow(chosenDataSetInfo)!=1){stop("one than one file selected")}
 

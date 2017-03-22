@@ -13,7 +13,7 @@ for (counter01 in 1:timeStampVector$numRepeatsFor_TestTrainSubset_Choice)
     result_List_radial=parallel_Result[[counter01]]$resultListSVM_radial
     result_List_sigmoid=parallel_Result[[counter01]]$resultListSVM_sigmoid
     result_List_RF=parallel_Result[[counter01]]$resultListRF
-    
+
     performanceDf_linear=parallel_Result[[counter01]]$performanceDf_linear
     performanceDf_linear$runNum=1
     performanceDf_radial=parallel_Result[[counter01]]$performanceDf_radial
@@ -23,26 +23,26 @@ for (counter01 in 1:timeStampVector$numRepeatsFor_TestTrainSubset_Choice)
     performanceDf_RF=parallel_Result[[counter01]]$performanceDfRF
     performanceDf_RF$runNum=1
   }
-  
+
   if(counter01!=1)
   {
     result_List_linear=dplyr::bind_rows(result_List_linear, parallel_Result[[counter01]]$resultListSVM_linear)
     result_List_radial=dplyr::bind_rows(result_List_radial, parallel_Result[[counter01]]$resultListSVM_radial)
     result_List_sigmoid=dplyr::bind_rows(result_List_sigmoid, parallel_Result[[counter01]]$resultListSVM_sigmoid)
     result_List_RF=dplyr::bind_rows(result_List_RF,parallel_Result[[counter01]]$resultListRF)
-    
+
     performanceDf_linear_temp = parallel_Result[[counter01]]$performanceDf_linear
     performanceDf_linear_temp$runNum=counter01
     performanceDf_linear=dplyr::bind_rows(performanceDf_linear, performanceDf_linear_temp)
-    
+
     performanceDf_radial_temp = parallel_Result[[counter01]]$performanceDf_radial
     performanceDf_radial_temp$runNum=counter01
     performanceDf_radial=dplyr::bind_rows(performanceDf_radial, performanceDf_radial_temp)
-    
+
     performanceDf_sigmoid_temp = parallel_Result[[counter01]]$performanceDf_sigmoid
     performanceDf_sigmoid_temp$runNum=counter01
     performanceDf_sigmoid=dplyr::bind_rows(performanceDf_sigmoid, performanceDf_sigmoid_temp)
-    
+
     performanceDf_RF_temp = parallel_Result[[counter01]]$performanceDfRF
     performanceDf_RF_temp$runNum=counter01
     performanceDf_RF=dplyr::bind_rows(performanceDf_RF, performanceDf_RF_temp)
@@ -52,7 +52,7 @@ for (counter01 in 1:timeStampVector$numRepeatsFor_TestTrainSubset_Choice)
 
 ###*****************************
 # Generate the axis names for the figure at the end
-axisNames=levels(result_List_radial$conditionInvestigated) 
+axisNames=levels(result_List_radial$conditionInvestigated)
 ###*****************************
 
 
@@ -65,9 +65,9 @@ result_List_radial$model<-"radial"
 result_List_sigmoid$model<-"sigmoid"
 result_List_RF$model<-"RF"
 
-result_List<-dplyr::bind_rows(result_List_linear, 
-                              result_List_radial, 
-                              result_List_sigmoid, 
+result_List<-dplyr::bind_rows(result_List_linear,
+                              result_List_radial,
+                              result_List_sigmoid,
                               result_List_RF)
 result_List$kernel<-NULL
 
@@ -83,15 +83,15 @@ performanceDf_RF$model="RF"
 
 performanceDf<-dplyr::bind_rows(performanceDf_linear,
                                 performanceDf_radial,
-                                performanceDf_sigmoid, 
+                                performanceDf_sigmoid,
                                 performanceDf_RF)
 
-performanceDf %>% 
+performanceDf %>%
   dplyr::select(runNum,model,
                 cost=costList,gamma=gammaList,
                 nodesize, mtry, ntree,
                 error=error.val,tryList, tryListNo) %>%
-  dplyr::group_by(runNum, model, 
+  dplyr::group_by(runNum, model,
                   cost, gamma, nodesize, mtry, ntree) %>%
   dplyr::summarize(error=mean(error), dispersion=sd(error))->performanceDf
 
@@ -99,34 +99,38 @@ performanceDf  %>%
   dplyr::mutate(performance=1-error,
                 logCost=log10(cost),
                 logGamma=log10(gamma))%>%
-  dplyr::select(runNum, model, 
-                cost, logCost, gamma, logGamma, nodesize, mtry, ntree, 
+  dplyr::select(runNum, model,
+                cost, logCost, gamma, logGamma, nodesize, mtry, ntree,
                 error, performance, dispersion)->performanceDf
 ###*****************************
 
 
 
-
 ###*****************************
-# Find the 240 =60 x 4 best models 
+# Find the 240 =60 x 4 best models
 result_List %>%
   dplyr::group_by(TestTrainSubsetNo, model) %>%
+  dplyr::mutate(error_test=F1ScoreErrCpp(predictedValue, conditionInvestigated))%>%
   dplyr::summarize(performance=unique(performance),
-                   cost = unique(cost), 
-                   gamma = unique(gamma), 
-                   nodesize = unique(nodesize), 
-                   mtry = unique(mtry), 
-                   ntree = unique(ntree))%>%
+                   cost = unique(cost),
+                   gamma = unique(gamma),
+                   nodesize = unique(nodesize),
+                   mtry = unique(mtry),
+                   ntree = unique(ntree),
+                   error_test=unique(error_test))%>%
+  dplyr::mutate(performance_test=1-error_test)%>%
   dplyr::arrange(model, TestTrainSubsetNo)->result_List_sum  # the file that have length of 60x4
 
-result_List_sum  %>%   
+result_List_sum  %>%
   dplyr::group_by(model)%>%
-  dplyr::mutate(meanPerformance=mean(performance)) %>%  # calculate mean performance of each model
+  dplyr::mutate(meanPerformance=mean(performance),
+                meanPerformance_test=mean(performance_test)) %>%  # calculate mean performance of each model
   dplyr::mutate(analyzeName=analyzeName)->result_List_sum  # add the analyze name
 
 fig01<-ggplot(result_List_sum, aes(x=model, y=performance, group=model))+
   geom_violin(fill="grey80")+
-  geom_point(aes(x=model, y=meanPerformance))
+  geom_point(aes(x=model, y=meanPerformance))+
+  ylim(0.5,1)
 
 print(fig01)
 
@@ -138,7 +142,11 @@ result_List_sum%>%
   dplyr::group_by(model)%>%
   dplyr::summarise(numWin=n())->modelFreq  # number of wins for each model for different Test-Train subsets
 
-modelFreq %>% dplyr::filter(numWin==max(numWin)) %>% .$model->chosenModel # chosen model based on most wins
+modelFreq %>%
+  #dplyr::filter(!model=="RF") %>% # We need to solve this
+  dplyr::filter(numWin==max(numWin)) %>%
+  .$model->chosenModel # chosen model based on most wins
+
 ###*****************************
 
 
@@ -234,7 +242,7 @@ combinedParameters<-cowplot::ggdraw() +
 
 print(combinedParameters)
 
-cowplot::save_plot(filename = paste0("../b_figures/","combinedParameters_",analyzeName,".jpeg"), 
+cowplot::save_plot(filename = paste0("../b_figures/","combinedParameters_",analyzeName,".jpeg"),
                    plot = combinedParameters, ncol = 3, nrow = 2)
 ###*****************************
 
@@ -264,7 +272,10 @@ winnerModelResults %>%
 
 winnerModelResultsSum%>%
   dplyr::filter(predictedValue==conditionInvestigated)%>%
-  .$combinationLength %>%sum(.)->diagonalSum
+  .$combinationLength %>%sum(.)->diagonalSum_samples
+winnerModelResultsSum%>%
+  dplyr::filter(predictedValue==conditionInvestigated)%>%
+  .$percentPrediction %>%sum(.)->diagonalSum_percents
 ###*****************************####
 
 
@@ -278,16 +289,16 @@ winnerModelResultsSum[is.na(winnerModelResultsSum)] <- 0
 
 winnerModelResultsSum$conditionInvestigated<-factor(winnerModelResultsSum$conditionInvestigated)
 winnerModelResultsSum$predictedValue<-factor(winnerModelResultsSum$predictedValue)
-winnerModelResultsSum$predictedValue <- factor(winnerModelResultsSum$predictedValue, 
+winnerModelResultsSum$predictedValue <- factor(winnerModelResultsSum$predictedValue,
                                                levels=rev(levels(winnerModelResultsSum$predictedValue)))
 ###*****************************
 
 
 ###*****************************
 # Make the order of labels correct in "winnerModelResultsSum" DF which includes a list of predictions
-winnerModelResultsSum$conditionInvestigated <- factor(winnerModelResultsSum$conditionInvestigated, 
+winnerModelResultsSum$conditionInvestigated <- factor(winnerModelResultsSum$conditionInvestigated,
                                                       levels=rev(factorOrder))
-winnerModelResultsSum$predictedValue <- factor(winnerModelResultsSum$predictedValue, 
+winnerModelResultsSum$predictedValue <- factor(winnerModelResultsSum$predictedValue,
                                                levels=(factorOrder))
 ###*****************************
 
@@ -350,10 +361,17 @@ breakList=seq(from=1,to=round(CombinationLengthMax_scaled),length.out=6)
 labelList=round(((breakList)^(1/n_scale))-1)
 
 fig03<-ggplot(winnerModelResultsSum, aes( y=conditionInvestigated,x= predictedValue))+
-  geom_tile(aes(fill=((combinationLength+1)^(n_scale)-1)),colour = "grey50")+
-  scale_fill_gradient(low = "White", high = "Black",limits=c(0,CombinationLengthMax_scaled),
-                      name = "% Prediction", breaks=breakList, labels=labelList)+
-  geom_text(aes(label=sprintf("%1.0f", combinationLength)),size=5, color="white")+
+  
+  #geom_tile(aes(fill=((combinationLength+1)^(n_scale)-1)),colour = "grey50")+ # num sample variant
+  #scale_fill_gradient(low = "White", high = "Black",limits=c(0,CombinationLengthMax_scaled), # num sample variant
+  #                    name = "% Prediction", breaks=breakList, labels=labelList)+
+  # geom_text(aes(label=sprintf("%1.0f", combinationLength)),size=5, color="white")+ # num sample variant
+  
+  geom_tile(aes(fill=percentPrediction),colour = "grey50")+ # num percent variant
+  scale_fill_gradient(low = "White", high = "Black",limits=c(0,100), # num percent variant
+                       name = "% Prediction")+
+  geom_text(aes(label=sprintf("%1.0f", percentPrediction)),size=5, color="white")+ # num percent variant
+  
   scale_x_discrete(expand=c(0,0), breaks=1:length(levels(winnerModelResultsSum$conditionInvestigated))) +   # Set x-breaks here
   coord_cartesian(xlim=c(0.5, length(levels(winnerModelResultsSum$conditionInvestigated))+0.5))+
   scale_y_discrete(expand=c(0,0), breaks=1:length(levels(winnerModelResultsSum$conditionInvestigated))) +   # Set x-breaks here
@@ -376,10 +394,17 @@ print(fig03)
 
 
 fig04<-ggplot(winnerModelResultsSum, aes( y=conditionInvestigated,x= predictedValue))+
-  geom_tile(aes(fill=((combinationLength+1)^(n_scale))-1))+
-  scale_fill_gradient(low = "White", high = "Black",limits=c(0,CombinationLengthMax_scaled),
-                      name = "% Prediction", breaks=breakList, labels=labelList)+
-  geom_text(aes(label=sprintf("%1.0f", combinationLength)),size=5)+
+  
+  # geom_tile(aes(fill=((combinationLength+1)^(n_scale))-1))+ # num sample variant
+  # scale_fill_gradient(low = "White", high = "Black",limits=c(0,CombinationLengthMax_scaled), # num sample variant
+  #                    name = "% Prediction", breaks=breakList, labels=labelList)+
+  # geom_text(aes(label=sprintf("%1.0f", combinationLength)),size=5)+ # num sample variant
+  
+  geom_tile(aes(fill=percentPrediction),colour = "grey50")+ # num percent variant
+  scale_fill_gradient(low = "White", high = "Black",limits=c(0,100), # num percent variant
+                      name = "% Prediction")+
+  geom_text(aes(label=sprintf("%1.0f", percentPrediction)),size=5, color="white")+ # num percent variant
+  
   theme_bw()+
   #xlab("predicted value")+
   #ylab("true value")+
@@ -400,13 +425,13 @@ print(figPercent)
 
 
 fig05<-ggplot(tidyDF, aes( x=axis1, y=condition))+
-  
+
   geom_tile(aes(fill=variable))+
   scale_fill_manual(values=colorCodes)+ # Color bar
-  geom_text(aes(label=variable_Short),fontface="bold") + 
+  geom_text(aes(label=variable_Short),fontface="bold") +
   scale_x_discrete(expand=c(0,0), breaks=1:max(tidyDF$axis1)) +   # Set x-breaks here
-  coord_cartesian(xlim=c(0.5, max(tidyDF$axis1)+0.5)) + # To get rid of white space  
-  guides(fill = guide_legend(title="Condition", 
+  coord_cartesian(xlim=c(0.5, max(tidyDF$axis1)+0.5)) + # To get rid of white space
+  guides(fill = guide_legend(title="Condition",
                              nrow=ceiling(length(valuesOrdered)/6),
                              byrow = TRUE))+
   theme(legend.position="bottom",
@@ -423,10 +448,10 @@ tidyDF$condition <- factor(tidyDF$condition,levels=rev(testConditions))
 fig06<-ggplot(tidyDF, aes( y=axis2, x=condition))+
   geom_tile(aes(fill=variable))+
   scale_fill_manual(values=colorCodes)+ # Color bar
-  geom_text(aes(label=variable_Short),fontface="bold") + 
+  geom_text(aes(label=variable_Short),fontface="bold") +
   scale_y_discrete(expand=c(0,0), breaks=1:max(tidyDF$axis1)) +   # Set x-breaks here
-  coord_cartesian(ylim=c(0.5, max(tidyDF$axis1)+0.5))+   # To get rid of white space  
-  guides(fill = guide_legend(title="Condition", 
+  coord_cartesian(ylim=c(0.5, max(tidyDF$axis1)+0.5))+   # To get rid of white space
+  guides(fill = guide_legend(title="Condition",
                              nrow=ceiling(length(valuesOrdered)/6),
                              byrow = TRUE))+
   theme(legend.position="bottom",
@@ -481,7 +506,7 @@ g.main <- gtable_add_grob(g.main, color_legend,
                           name="color_legend")
 
 #add space above color legend
-#add a row as spacer 
+#add a row as spacer
 index <- subset(g.main$layout, name == "color_legend")
 g.main <- gtable_add_rows(g.main, unit.c(unit(0.35, "in")), index$b-2)
 
@@ -510,23 +535,23 @@ if(!doNotSave==1)
   # Save Figure
   cowplot::save_plot(figComb,
                      filename = paste0("../b_figures/","fig_",analyzeName,".pdf"),
-                     base_aspect_ratio=1.333, base_height = 6, 
+                     base_aspect_ratio=1.333, base_height = 6,
                      units = "in", useDingbats=FALSE, limitsize=FALSE,
                      ncol = 1.4, nrow=1.2)
-  
-  
+
+
   # Save Figure with legend
   cowplot::save_plot(figComb_wL,
                      filename = paste0("../b_figures/","fig_withLegend_",analyzeName,".pdf"),
-                     base_aspect_ratio=1.333, base_height = 6, 
+                     base_aspect_ratio=1.333, base_height = 6,
                      units = "in", useDingbats=FALSE, limitsize=FALSE,
                      ncol = 1.4, nrow=1.2)
-  
+
   # Save Figure Object
   fileNameCollapsed=paste(fileName,collapse = "_")
   save(list = c("figComb","figComb_wL","percentLegendObj","color_legend"),
        file = paste0("../b_figures/","fig_obj_",analyzeName,".Rda"))
-  
+
   ##Save Full Color Legend
   save(list = c("color_legend"),
        file = paste0("../b_figures/","ColorLegend_",analyzeName,".Rda"))
@@ -543,7 +568,8 @@ combF1Score<-
   1-F1ScoreErrCpp(winnerModelResults$predictedValue,winnerModelResults$conditionInvestigated)
 
 chosenDataSetInfo->metaVector
-metaVector$diagonalSum=diagonalSum
+metaVector$diagonalSum_samples=diagonalSum_samples
+metaVector$diagonalSum_percents=diagonalSum_percents
 metaVector$nDistinctCondition=length(axisNames)
 metaVector$combF1Score=combF1Score
 metaVector$chosenModel=chosenModel
@@ -560,4 +586,13 @@ metaFileOld %>% dplyr::filter(!analyzeName==get("analyzeName"))->metaFileOld
 metaFileNew<-dplyr::bind_rows(metaFileOld,metaVector) # add new line
 metaFileNew<-unique(metaFileNew) # remove duplicates
 write.csv(x=metaFileNew, file=paste0("../b_results/","parametersAnalyzeMetafile",".csv"),row.names = FALSE)
+###*****************************
+
+
+###*****************************
+print(modelFreq)
+print(chosenModel)
+print(combF1Score)
+print(diagonalSum_samples)
+print(diagonalSum_percents)
 ###*****************************

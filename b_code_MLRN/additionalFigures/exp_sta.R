@@ -37,7 +37,7 @@ require("stringr")
 
 ###*****************************
 #Load Functions
-source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")	
+source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")
 ###*****************************
 
 
@@ -55,7 +55,7 @@ winnerModels_protein_sta = read.csv(file = "../b_results/model_performance_prote
 # combine data
 winnerModels<-dplyr::bind_rows(winnerModels_mrna_exp,
                                winnerModels_mrna_sta,
-                               winnerModels_protein_exp, 
+                               winnerModels_protein_exp,
                                winnerModels_protein_sta)
 
 winnerModels %>%
@@ -65,12 +65,13 @@ winnerModels %>%
 
 winnerModels%>%
   dplyr::group_by(phase, pick_data, model)%>%
-  dplyr::summarise(meanPerformance= mean(performance))->winnerModelsSummary
+  dplyr::summarise(meanPerformance= mean(performance),
+                   meanPerformance_test=mean(performance_test))->winnerModelsSummary
 
 
 # winnerModels$experiment <- factor(winnerModels$experiment,
 #                                   levels = c("int_mRNA", "int_protein", "int_mRNA_protein"))
-# 
+#
 # winnerModels$model <- factor(winnerModels$model,
 #                              levels = c("radial", "sigmoid", "linear", "RF"))
 ###*****************************
@@ -78,7 +79,7 @@ winnerModels%>%
 
 ###*****************************
 # generate the increase in success figure
-fig01<-ggplot(winnerModelsSummary, aes(x=phase, y=meanPerformance, group=model, colour=model))+
+fig01<-ggplot(winnerModelsSummary, aes(x=phase, y=meanPerformance_test, group=model, colour=model))+
   facet_grid(. ~ pick_data)+
   geom_point(aes(colour=model), size=1.5)+
   geom_line(size=1)+
