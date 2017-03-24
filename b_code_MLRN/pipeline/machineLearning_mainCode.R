@@ -10,10 +10,10 @@ source("pipeline/machineLearning_subCode_initDfprep.R")
 # tempmodelsvm_list=list()
 # #******************************************
 
-browser()
+
 #******************************************
 # --MAIN LOOP-- do the parallel processing
-parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do%
+parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %dopar%
 {
   print(counter01)
   # Find out data sets that will go into machine learning algorithm
@@ -186,7 +186,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
         tibble::rownames_to_column(var = "dataSet") %>%
         dplyr::left_join(tuneConditionInvestigated,.)->predictedResults
 
-      
+
       if(type_svmChoice=="C-classification")
       {linearTuneResults$error.val[counter03]=F1ScoreErrCpp(predictedResults$conditionInvestigated,
                                                             predictedResults$predictedValue)}
@@ -292,7 +292,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
           tibble::rownames_to_column(var = "dataSet") %>%
           dplyr::left_join(tuneConditionInvestigated,.)->predictedResults
 
-        
+
         if(type_svmChoice=="C-classification")
         {radialTuneResults$error.val[counter03]=F1ScoreErrCpp(predictedResults$conditionInvestigated,
                                                              predictedResults$predictedValue)}
@@ -492,14 +492,14 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
                                                         mtry=mtryValue,
                                                         nodesize=nodesizeValue,
                                                         classwt=classWeightVector)}
-          
+
           if(type_svmChoice=="eps-regression")
           {modelSVM_tune_RF<-randomForest::randomForest(x=trainDataFrame[-1], y=trainDataFrame[[1]],
                                                         ntree= ntreeValue,
                                                         mtry=mtryValue,
                                                         nodesize=nodesizeValue,
                                                         classwt=classWeightVector)}
-          
+
 
 
           modelSVM_tune_RF %>%
@@ -508,7 +508,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
             tibble::rownames_to_column(var = "dataSet") %>%
             dplyr::left_join(tuneConditionInvestigated,.)->predictedResults
 
-          
+
           if(type_svmChoice=="C-classification")
           {RFTuneResults$error.val[counter03]=F1ScoreErrCpp(predictedResults$conditionInvestigated,
                                                                 predictedResults$predictedValue)}
@@ -554,14 +554,14 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
                                            mtry=best_mtryValue_RF,
                                            nodesize=best_nodesizeValue_RF,
                                            classwt=classWeightVector)}
-  
+
   if(type_svmChoice=="eps-regression")
   {modelSVM_RF<-randomForest::randomForest(x=dim_reduced_traintune_DF[-1], y=dim_reduced_traintune_DF[[1]],
                                            ntree= best_ntreeValue_RF,
                                            mtry=best_mtryValue_RF,
                                            nodesize=best_nodesizeValue_RF,
                                            classwt=classWeightVector)}
-  
+
 
   modelSVM_RF %>%
     predict(.,dim_reduced_test_DF) %>%

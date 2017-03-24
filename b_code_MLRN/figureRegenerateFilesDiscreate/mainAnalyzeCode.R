@@ -377,6 +377,8 @@ fig03<-ggplot(winnerModelResultsSum, aes( y=conditionInvestigated,x= predictedVa
   scale_y_discrete(expand=c(0,0), breaks=1:length(levels(winnerModelResultsSum$conditionInvestigated))) +   # Set x-breaks here
   coord_cartesian(ylim=c(0.5, length(levels(winnerModelResultsSum$conditionInvestigated))+0.5))+
   theme_bw()+
+  xlab("")+
+  ylab("")+
   theme( panel.grid.major = element_blank(),
          panel.grid.minor = element_blank(),
          axis.text.x=element_text(size=0),
@@ -392,7 +394,6 @@ fig03<-ggplot(winnerModelResultsSum, aes( y=conditionInvestigated,x= predictedVa
 
 print(fig03)
 
-
 fig04<-ggplot(winnerModelResultsSum, aes( y=conditionInvestigated,x= predictedValue))+
   
   # geom_tile(aes(fill=((combinationLength+1)^(n_scale))-1))+ # num sample variant
@@ -406,8 +407,8 @@ fig04<-ggplot(winnerModelResultsSum, aes( y=conditionInvestigated,x= predictedVa
   geom_text(aes(label=sprintf("%1.0f", percentPrediction)),size=5, color="white")+ # num percent variant
   
   theme_bw()+
-  #xlab("predicted value")+
-  #ylab("true value")+
+  xlab("")+
+  ylab("")+
   #ggtitle("mRNA PCoA D12 AllPhase")+
   theme( panel.grid.major = element_blank(),
          panel.grid.minor = element_blank(),
@@ -444,6 +445,7 @@ print(variableLegendObj)
 
 
 tidyDF$condition <- factor(tidyDF$condition,levels=rev(testConditions))
+
 
 fig06<-ggplot(tidyDF, aes( y=axis2, x=condition))+
   geom_tile(aes(fill=variable))+

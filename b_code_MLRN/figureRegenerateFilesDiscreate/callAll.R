@@ -33,6 +33,18 @@ source("figureRegenerateFilesDiscreate/mRNA_exp_analyze.R")
 source("figureRegenerateFilesDiscreate/mRNA_sta_analyze.R")
 source("figureRegenerateFilesDiscreate/protein_exp_analyze.R")
 source("figureRegenerateFilesDiscreate/protein_sta_analyze.R")
+
+# mRNA distinct tests
+source("figureRegenerateFilesDiscreate/mRNA_carbon_analyze.R")
+source("figureRegenerateFilesDiscreate/mRNA_growth_analyze.R")
+source("figureRegenerateFilesDiscreate/mRNA_Mg_analyze.R")
+source("figureRegenerateFilesDiscreate/mRNA_Na_analyze.R")
+
+# Protein distinct tests
+source("figureRegenerateFilesDiscreate/protein_carbon_analyze.R")
+source("figureRegenerateFilesDiscreate/protein_growth_analyze.R")
+source("figureRegenerateFilesDiscreate/protein_Mg_analyze.R")
+source("figureRegenerateFilesDiscreate/protein_Na_analyze.R")
 ###*****************************
 
 
