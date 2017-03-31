@@ -218,4 +218,5 @@ F1ScoreErr<-function(y,prediction)
 }
 
 sourceCpp("pipeline/f1ScoreFunction.cpp")
+sourceCpp("pipeline/f1ScoreFunctionCorrected.cpp")
 ###*****************************

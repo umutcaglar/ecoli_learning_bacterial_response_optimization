@@ -47,6 +47,9 @@ timeStampVector$ncore=getDoParWorkers()
 #seed
 timeStampVector$seedNo=seedNo
 
+# Cost function
+timeStampVector$costFunction = costFunction
+
 # file Name
 options(digits.secs=6)
 time1<-Sys.time();
