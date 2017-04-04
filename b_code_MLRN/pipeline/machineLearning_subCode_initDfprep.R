@@ -193,30 +193,126 @@ inputMetaDf %>%
 
 ###*****************************
 # Hand Made Error Function
-F1ScoreErr<-function(y,prediction)
+F1ScoreErr1<-function(y,prediction)
 {
+  beta=1
+  y=make.names(y)
+  prediction=make.names(prediction)
   a=as.vector(y); b=as.vector(prediction)
   
-  inputs=sort(unique(a))
+  inputs=sort(unique(c(a,b)))
+  #print(paste0("inputs: ", paste0(inputs, collapse = " ")))
   
+  TP=c();
+  FP=c();
+  FN=c();
   for (counter04 in 1:length(inputs))
   {
     testFor=inputs[counter04]
     
-    sum(a==testFor & b==testFor)->TP
-    sum(a!=testFor & b==testFor)->FP
-    sum(a==testFor & b!=testFor)->FN
-    
-    if(counter04==1)
-    {F1=(2*TP)/(2*TP+FP+FN)}
-    if(counter04!=1)
-    {F1[counter04]=(2*TP)/(2*TP+FP+FN)}
+    sum((a==testFor) & (b==testFor))->TP[counter04]
+    sum((!a==testFor) & (b==testFor))->FP[counter04]
+    sum((a==testFor) & (!b==testFor))->FN[counter04]
   }
   
-  F1_err=1-mean(F1)
+  #print(paste0("TP: ", paste0(TP, collapse = " ")));
+  #print(paste0("FP: ", paste0(FP, collapse = " ")));
+  #print(paste0("FN: ", paste0(FN, collapse = " ")));
+  
+  # Controls
+  sum_TP = sum(TP, na.rm =T)
+  sum_FP = sum(FP, na.rm =T)
+  sum_FN = sum(FN, na.rm =T)
+  if(sum_FP!=sum_FN){browser()}
+  if(length(y)!=length(prediction)){browser()}
+  if(length(y)!=sum_TP + sum_FP){browser()}
+  
+  #print(paste0("sum FP: ", sum_FP))
+  #print(paste0("sum FN: ", sum_FN))
+  
+  PRE_vec = TP/(TP+FP);
+  REC_vec = TP/(TP+FN);
+  
+  #print(paste0("PRE_vec: ", paste0(PRE_vec, collapse = " ")))
+  #print(paste0("REC_vec: ", paste0(REC_vec, collapse = " ")))
+  
+  PRE_m = mean(PRE_vec, na.rm=T);
+  REC_m = mean(REC_vec, na.rm=T);
+  
+  #print(paste0("PRE_m: ",PRE_m))
+  #print(paste0("REC_m: ",REC_m))
+  
+  Fscore_m = ((beta^2+1)*PRE_m*REC_m)/((beta^2)*PRE_m+REC_m);
+  if(PRE_m+REC_m==0){Fscore_m = 0}
+  #print(paste0("Fscore_m1: ",Fscore_m))
+  
+  F1_err=1-Fscore_m
   return(F1_err)
 }
 
-sourceCpp("pipeline/f1ScoreFunction.cpp")
-sourceCpp("pipeline/f1ScoreFunctionCorrected.cpp")
+# F1ScoreErr2<-function(y,prediction)
+# {
+#   beta=1
+#   y=make.names(y)
+#   prediction=make.names(prediction)
+#   a=as.vector(y); b=as.vector(prediction)
+#   
+#   q<-data.frame(a=a,b=b)
+#   
+#   q[[1]]<-factor(as.vector(q[[1]]))
+#   q[[2]]<-factor(as.vector(q[[2]]))
+#   
+#   combinedLevels=sort(union(levels(q[[1]]),levels(q[[2]])))
+#   combinedLevelsDF_a=data.frame(a=combinedLevels)
+#   combinedLevelsDF_b=data.frame(b=combinedLevels)
+#   
+#   q[[1]] <- factor(q[[1]], levels=combinedLevels)
+#   q[[2]] <- factor(q[[2]], levels=combinedLevels)
+#   
+#   q %>%
+#     dplyr::group_by(b) %>% 
+#     dplyr::filter(a!=b) %>% 
+#     dplyr::summarize(FP=n())%>%
+#     dplyr::left_join(combinedLevelsDF_b, ., by = "b")%>%
+#     dplyr::mutate(FP=ifelse(is.na(FP),0,FP))%>%
+#     dplyr::rename(variable=b)->FP
+#   sum(FP$FP)
+#   
+#   q %>%
+#     dplyr::group_by(a) %>% 
+#     dplyr::filter(a!=b) %>% 
+#     dplyr::summarize(FN=n()) %>%
+#     dplyr::left_join(combinedLevelsDF_a, ., by = "a")%>%
+#     dplyr::mutate(FN=ifelse(is.na(FN),0,FN))%>%
+#     dplyr::rename(variable=a)->FN
+#   sum(FN$FN)
+#   
+#   q %>%
+#     dplyr::group_by(a) %>% 
+#     dplyr::filter(a==b)%>% 
+#     dplyr::summarize(TP=n())%>%
+#     dplyr::left_join(combinedLevelsDF_a, ., by = "a")%>%
+#     dplyr::mutate(TP=ifelse(is.na(TP),0,TP))%>%
+#     dplyr::rename(variable=a)->TP
+#   
+#   dplyr::left_join(TP,FP, by = "variable") %>%
+#     dplyr::left_join(.,FN, by = "variable")->summaryDF
+#   
+#   summaryDF %>%
+#     dplyr::mutate(precision=TP/(TP+FP),
+#                   recall=TP/(TP+FN))->summaryDF
+#   
+#   PRE_m = mean(summaryDF$precision, na.rm=T);
+#   REC_m = mean(summaryDF$recall, na.rm=T);
+#   
+#   Fscore_m = ((beta^2+1)*PRE_m*REC_m)/((beta^2)*PRE_m+REC_m);
+#   if(PRE_m+REC_m==0){Fscore_m = 0}
+#   
+#   #print(paste0("Fscore_m2: ", Fscore_m))
+#   F1_err=1-Fscore_m
+#   return(F1_err)
+# }
+
+#sourceCpp("pipeline/f1ScoreFunction.cpp")
+#sourceCpp("pipeline/f1ScoreFunctionCorrected.cpp")
 ###*****************************

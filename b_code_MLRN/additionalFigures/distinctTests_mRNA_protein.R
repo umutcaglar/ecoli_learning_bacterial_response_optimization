@@ -142,12 +142,24 @@ figComb_protein_Na<-figComb
 ###*****************************
 # Combine Plots
 
-fig02<-cowplot::plot_grid(figComb_mrna_carbon, figComb_mrna_growth, figComb_mrna_Mg, figComb_mrna_Na,
+fig02a<-cowplot::plot_grid(figComb_mrna_carbon, figComb_mrna_growth, figComb_mrna_Mg, figComb_mrna_Na,
                    figComb_protein_carbon, figComb_protein_growth, figComb_protein_Mg, figComb_protein_Na, 
                    nrow = 2, ncol = 4, scale = .9, labels = c("A","B","C","D","E","F","G","I"))
 
-print(fig02)
-cowplot::save_plot(filename = "../b_figures/distinctTestsConfMatrix_mRNA_Protein.jpeg", plot = fig02, ncol = 4, nrow = 2)
+print(fig02a)
+
+
+fig02b<-cowplot::plot_grid(figComb_mrna_carbon, figComb_protein_carbon,
+                           figComb_mrna_growth, figComb_protein_growth,
+                           figComb_mrna_Mg, figComb_protein_Mg,
+                           figComb_mrna_Na, figComb_protein_Na, 
+                           nrow = 4, ncol = 2, scale = .9, labels = c("A","B","C","D","E","F","G","I"))
+
+print(fig02b)
+
+
+cowplot::save_plot(filename = "../b_figures/distinctTestsConfMatrix_mRNA_Protein.jpeg", 
+                   plot = fig02b, ncol = 2, nrow = 4)
 
 ###*****************************
 

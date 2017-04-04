@@ -13,12 +13,14 @@ source("pipeline/machineLearning_subCode_initDfprep.R")
 
 #******************************************
 # --MAIN LOOP-- do the parallel processing
-registerDoMC(1) # only for error tracking
 print(paste0("Number of pararllel workers: ", getDoParWorkers())) 
 
-parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do%
+#parallel_Result=list() # errer tracking
+#for(counter01 in 1:numRepeatsFor_TestTrainSubset_Choice)
+
+parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %dopar%
 {
-   print(paste0("counter01 :",counter01))
+  print(paste0("counter01 :",counter01))
   # Find out data sets that will go into machine learning algorithm
   output<-divisionForTest(inputMetaDf,percentTest)
   
@@ -153,7 +155,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   
   
   # model 1 -> "linear"
-   print(paste0("model 1 -> linear"))
+  #print(paste0("model 1 -> linear"))
   ###*****************************
   # A) TUNE
   
@@ -175,8 +177,8 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     for(counter02b in 1:length(costList))
     {
       counter03=counter03+1;
-      print(paste0(counter03, " / ", nrow(linearTuneResults), "/ Linear // RunNo: ", 
-                   counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
+      #print(paste0(counter03, " / ", nrow(linearTuneResults), "/ Linear // RunNo: ", 
+      #             counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
       costValue=linearTuneResults$costList[counter03]
       
       modelSVM_tune_linear<-e1071::svm(data = trainDataFrame,
@@ -194,8 +196,8 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
       
       
       if(type_svmChoice=="C-classification")
-      {linearTuneResults$error.val[counter03]=F1ScoreErrCppCorrected(predictedResults$conditionInvestigated,
-                                                                     predictedResults$predictedValue)}
+      {linearTuneResults$error.val[counter03]=F1ScoreErr1(predictedResults$conditionInvestigated,
+                                                          predictedResults$predictedValue)}
       if(type_svmChoice=="eps-regression")
       {linearTuneResults$error.val[counter03]=1-
         summary(lm(predictedResults$conditionInvestigated~predictedResults$predictedValue))$r.squared}
@@ -255,7 +257,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   
   
   # model 2 -> "radial"
-   print(paste0("model 2 -> radial"))
+  #print(paste0("model 2 -> radial"))
   ###*****************************
   # A) TUNE
   
@@ -282,8 +284,8 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
       for(counter02c in 1:length(gammaList))
       {
         counter03=counter03+1;
-         print(paste0(counter03, " / ", nrow(radialTuneResults), "/ Radial // RunNo: ", 
-                      counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
+        #print(paste0(counter03, " / ", nrow(radialTuneResults), "/ Radial // RunNo: ", 
+        #             counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
         
         costValue=radialTuneResults$costList[counter03]
         gammaValue=radialTuneResults$gammaList[counter03]
@@ -304,8 +306,8 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
         
         
         if(type_svmChoice=="C-classification")
-        {radialTuneResults$error.val[counter03]=F1ScoreErrCppCorrected(predictedResults$conditionInvestigated,
-                                                                       predictedResults$predictedValue)}
+        {radialTuneResults$error.val[counter03]=F1ScoreErr1(predictedResults$conditionInvestigated,
+                                                            predictedResults$predictedValue)}
         if(type_svmChoice=="eps-regression")
         {radialTuneResults$error.val[counter03]=1-
           summary(lm(predictedResults$conditionInvestigated~predictedResults$predictedValue))$r.squared}
@@ -362,7 +364,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   
   
   # model 3 -> "sigmoid"
-   print(paste0("model 3 -> sigmoid"))
+  #print(paste0("model 3 -> sigmoid"))
   ###*****************************
   # A) TUNE
   sigmoidTuneResults<-merge(data.frame(gammaList=gammaList),
@@ -388,8 +390,8 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
       for(counter02c in 1:length(gammaList))
       {
         counter03=counter03+1;
-         print(paste0(counter03, " / ", nrow(sigmoidTuneResults), "/ sigmoid // RunNo: ", 
-                      counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
+        #print(paste0(counter03, " / ", nrow(sigmoidTuneResults), "/ sigmoid // RunNo: ", 
+        #             counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
         
         costValue=sigmoidTuneResults$costList[counter03]
         gammaValue=sigmoidTuneResults$gammaList[counter03]
@@ -410,8 +412,13 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
         
         
         if(type_svmChoice=="C-classification")
-        {sigmoidTuneResults$error.val[counter03]=F1ScoreErrCppCorrected(predictedResults$conditionInvestigated,
-                                                                        predictedResults$predictedValue)}
+        {
+          error.val.temp1=F1ScoreErr1(predictedResults$conditionInvestigated,predictedResults$predictedValue)
+          #error.val.temp2=F1ScoreErr2(predictedResults$conditionInvestigated,predictedResults$predictedValue)
+          if(is.na(error.val.temp1)){browser()}
+          #if(error.val.temp1!=error.val.temp2){browser()}
+          sigmoidTuneResults$error.val[counter03]=error.val.temp1
+        }
         if(type_svmChoice=="eps-regression")
         {sigmoidTuneResults$error.val[counter03]=1-
           summary(lm(predictedResults$conditionInvestigated~predictedResults$predictedValue))$r.squared}
@@ -468,7 +475,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   ###*****************************
   
   # model 4 -> RF
-  print(paste0("model 4 -> RF"))
+  #print(paste0("model 4 -> RF"))
   ###*****************************
   RFTuneResults<-merge(data.frame(ntree=ntreelistRF),
                        merge(data.frame(mtry=mtrylistRF),
@@ -497,8 +504,8 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
         for(counter02d in 1:length(ntreelistRF))
         {
           counter03=counter03+1;
-           print(paste0(counter03, " / ", nrow(RFTuneResults), "/ RF // RunNo: ", 
-                        counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
+          #print(paste0(counter03, " / ", nrow(RFTuneResults), "/ RF // RunNo: ", 
+          #             counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
           
           nodesizeValue=RFTuneResults$nodesize[counter03]
           mtryValue=RFTuneResults$mtry[counter03]
@@ -528,8 +535,8 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
           
           
           if(type_svmChoice=="C-classification")
-          {RFTuneResults$error.val[counter03]=F1ScoreErrCppCorrected(predictedResults$conditionInvestigated,
-                                                                     predictedResults$predictedValue)}
+          {RFTuneResults$error.val[counter03]=F1ScoreErr1(predictedResults$conditionInvestigated,
+                                                          predictedResults$predictedValue)}
           if(type_svmChoice=="eps-regression")
           {RFTuneResults$error.val[counter03]=1-
             summary(lm(predictedResults$conditionInvestigated~predictedResults$predictedValue))$r.squared}
@@ -593,6 +600,22 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     dplyr::mutate(nodesizeValue=best_nodesizeValue_RF) %>%
     dplyr::mutate(performance=best_performance_RF) -> result_i_RF
   ###*****************************
+  
+  
+  # Non parallel way of combining data
+  #******************************************
+  parallel_Result[counter01]=list(resultListSVM_linear=result_i_linear,
+                                  resultListSVM_radial=result_i_radial,
+                                  resultListSVM_sigmoid=result_i_sigmoid,
+                                  resultListRF=result_i_RF,
+                                  #modelsvm=modelSVM,
+                                  #modelrf=modelRF,
+                                  performanceDf_linear=linearTuneResults,
+                                  performanceDf_radial=radialTuneResults,
+                                  performanceDf_sigmoid=sigmoidTuneResults,
+                                  performanceDfRF=RFTuneResults)
+  
+  #******************************************
   
   
   # Parallel Way of combining data
