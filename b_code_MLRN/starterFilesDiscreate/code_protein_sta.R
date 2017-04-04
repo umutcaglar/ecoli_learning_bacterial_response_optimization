@@ -194,6 +194,9 @@ tuning = TRUE
 
 # parallel processing
 parallel_com = TRUE
+
+# CostFunction
+costFunction="F1 corrected"
 ###*****************************
 
 

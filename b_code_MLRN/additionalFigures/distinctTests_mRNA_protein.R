@@ -90,14 +90,14 @@ fig01<-ggplot(winnerModels, aes(x=model, y=performance_test, group=model))+
 
 print(fig01)
 
-fig02<-ggplot(winnerModels, aes(x=model, y=performance_test, group=model))+
-  facet_grid(.~analyzeName)+
-  geom_violin(aes(fill=model, color=model))+
-  geom_point(aes(x=model, y=meanPerformance_test))+
-  theme_bw()+
-  labs(title = "All conditions")
-
-print(fig02)
+# fig02<-ggplot(winnerModels, aes(x=model, y=performance_test, group=model))+
+#   facet_grid(.~analyzeName)+
+#   geom_violin(aes(fill=model, color=model))+
+#   geom_point(aes(x=model, y=meanPerformance_test))+
+#   theme_bw()+
+#   labs(title = "All conditions")
+# 
+# print(fig02)
 ###*****************************
 
 
@@ -142,9 +142,13 @@ figComb_protein_Na<-figComb
 ###*****************************
 # Combine Plots
 
-cowplot::plot_grid(figComb_mrna_carbon, figComb_mrna_growth, figComb_mrna_Mg, figComb_mrna_Na,
+fig02<-cowplot::plot_grid(figComb_mrna_carbon, figComb_mrna_growth, figComb_mrna_Mg, figComb_mrna_Na,
                    figComb_protein_carbon, figComb_protein_growth, figComb_protein_Mg, figComb_protein_Na, 
                    nrow = 2, ncol = 4, scale = .9, labels = c("A","B","C","D","E","F","G","I"))
+
+print(fig02)
+cowplot::save_plot(filename = "../b_figures/distinctTestsConfMatrix_mRNA_Protein.jpeg", plot = fig02, ncol = 4, nrow = 2)
+
 ###*****************************
 
 

@@ -13,9 +13,12 @@ source("pipeline/machineLearning_subCode_initDfprep.R")
 
 #******************************************
 # --MAIN LOOP-- do the parallel processing
+registerDoMC(1) # only for error tracking
+print(paste0("Number of pararllel workers: ", getDoParWorkers())) 
+
 parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do%
 {
-  print(paste0("counter01 :",counter01))
+   print(paste0("counter01 :",counter01))
   # Find out data sets that will go into machine learning algorithm
   output<-divisionForTest(inputMetaDf,percentTest)
   
@@ -150,7 +153,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   
   
   # model 1 -> "linear"
-  print(paste0("model 1 -> linear"))
+   print(paste0("model 1 -> linear"))
   ###*****************************
   # A) TUNE
   
@@ -252,7 +255,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   
   
   # model 2 -> "radial"
-  print(paste0("model 2 -> radial"))
+   print(paste0("model 2 -> radial"))
   ###*****************************
   # A) TUNE
   
@@ -279,8 +282,8 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
       for(counter02c in 1:length(gammaList))
       {
         counter03=counter03+1;
-        print(paste0(counter03, " / ", nrow(radialTuneResults), "/ Radial // RunNo: ", 
-                     counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
+         print(paste0(counter03, " / ", nrow(radialTuneResults), "/ Radial // RunNo: ", 
+                      counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
         
         costValue=radialTuneResults$costList[counter03]
         gammaValue=radialTuneResults$gammaList[counter03]
@@ -359,7 +362,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   
   
   # model 3 -> "sigmoid"
-  print(paste0("model 3 -> sigmoid"))
+   print(paste0("model 3 -> sigmoid"))
   ###*****************************
   # A) TUNE
   sigmoidTuneResults<-merge(data.frame(gammaList=gammaList),
@@ -385,8 +388,8 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
       for(counter02c in 1:length(gammaList))
       {
         counter03=counter03+1;
-        print(paste0(counter03, " / ", nrow(sigmoidTuneResults), "/ sigmoid // RunNo: ", 
-                     counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
+         print(paste0(counter03, " / ", nrow(sigmoidTuneResults), "/ sigmoid // RunNo: ", 
+                      counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
         
         costValue=sigmoidTuneResults$costList[counter03]
         gammaValue=sigmoidTuneResults$gammaList[counter03]
@@ -494,8 +497,8 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
         for(counter02d in 1:length(ntreelistRF))
         {
           counter03=counter03+1;
-          print(paste0(counter03, " / ", nrow(RFTuneResults), "/ RF // RunNo: ", 
-                       counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
+           print(paste0(counter03, " / ", nrow(RFTuneResults), "/ RF // RunNo: ", 
+                        counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
           
           nodesizeValue=RFTuneResults$nodesize[counter03]
           mtryValue=RFTuneResults$mtry[counter03]

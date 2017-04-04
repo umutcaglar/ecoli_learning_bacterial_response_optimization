@@ -147,7 +147,7 @@ condition=read.csv(file = paste0("../a_results/",metaDataName,".csv"),header = T
 ###*****************************
 # Trial Reletad Parameters
 #dimensionChoice=11
-numRepeatsFor_TestTrainSubset_Choice=8 #60 #how many times will I divide the data as train&tune vs test
+numRepeatsFor_TestTrainSubset_Choice=60 #60 #how many times will I divide the data as train&tune vs test
 percentTest=.20 #Should be a number between 0-1
 percentTune=.20 #Should be a number between 0-1
 # sum of percentTest and percentTune shoul not be smaller than 1
@@ -174,8 +174,8 @@ powerRangeGammaLow=-3 # the span of parameters 2 means data will span 10^-2 to 1
 powerRangeGammaHigh=2 # the span of parameters 2 means data will span 10^-2 to 10^2
 powerRangeCostLow=-1 # the span of parameters 2 means data will span 10^-2 to 10^2
 powerRangeCostHigh=8 # the span of parameters 2 means data will span 10^-2 to 10^2
-ndivisionCost=55 #31 # number of division points within the interval cost (if 5 we will have 10^-2, 10^-1, 10^0, 10^1, 10^2)
-ndivisionGamma=31 #number of division points within the interval gamma
+ndivisionCost=51 #51 # number of division points within the interval cost (if 5 we will have 10^-2, 10^-1, 10^0, 10^1, 10^2)
+ndivisionGamma=31 #31 #number of division points within the interval gamma
 kernelList=c("linear","radial","sigmoid") # kernel vector
 
 # RF Tune parameters
