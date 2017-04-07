@@ -70,7 +70,7 @@ fig01<-ggplot(winnerModels, aes(x=model, y=performance_test, group=model))+
   geom_violin(aes(fill=model, color=model))+
   geom_point(aes(x=model, y=meanPerformance_test))+
   theme_bw()+
-  labs(title = "All conditions")
+  labs(title = "All conditions") + xlab("Model") + ylab("F1 performance on test data")
 
 print(fig01)
 ###*****************************

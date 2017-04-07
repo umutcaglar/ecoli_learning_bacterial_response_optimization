@@ -81,6 +81,7 @@ winnerModels%>%
 # generate the increase in success figure
 fig01<-ggplot(winnerModelsSummary, aes(x=phase, y=meanPerformance_test, group=model, colour=model))+
   facet_grid(. ~ pick_data)+
+  xlab("Phase")+ ylab("Mean F1 performance on test data")+
   geom_point(aes(colour=model), size=1.5)+
   geom_line(size=1)+
   theme_bw()

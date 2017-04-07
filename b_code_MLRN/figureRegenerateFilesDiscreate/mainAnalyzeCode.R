@@ -575,10 +575,10 @@ metaVector$diagonalSum_percents=diagonalSum_percents
 metaVector$nDistinctCondition=length(axisNames)
 metaVector$combF1Score=combF1Score
 metaVector$chosenModel=chosenModel
-metaVector$linear = ifelse("linear" %in% names(modelFreqVec),modelFreqVec[["linear"]],0)
-metaVector$radial = ifelse("radial" %in% names(modelFreqVec),modelFreqVec[["radial"]],0)
-metaVector$sigmoid = ifelse("sigmoid" %in% names(modelFreqVec),modelFreqVec[["sigmoid"]],0)
-metaVector$RF = ifelse("RF" %in% names(modelFreqVec),modelFreqVec[["RF"]],0)
+metaVector$linear = ifelse("linear" %in% names(modelFreqVec),yes = try(modelFreqVec[["linear"]],silent = T),no = 0)
+metaVector$radial = ifelse("radial" %in% names(modelFreqVec),yes = try(modelFreqVec[["radial"]],silent = T),no = 0)
+metaVector$sigmoid = ifelse("sigmoid" %in% names(modelFreqVec),yes = try(modelFreqVec[["sigmoid"]],silent = T),no = 0)
+metaVector$RF = ifelse(test = "RF" %in% names(modelFreqVec),yes = try(modelFreqVec[["RF"]],silent = T),no = 0)
 metaVector$analyzeName=analyzeName
 
 
@@ -592,9 +592,13 @@ write.csv(x=metaFileNew, file=paste0("../b_results/","parametersAnalyzeMetafile"
 
 
 ###*****************************
+print("Model Frequencies:")
 print(modelFreq)
-print(chosenModel)
-print(combF1Score)
-print(diagonalSum_samples)
-print(diagonalSum_percents)
+
+
+print(paste0("Chosen model: ",chosenModel))
+print(paste0("multi class macro F1 score: ", combF1Score))
+print(paste0("Diagonal sum of samples. (Before normalization) :",diagonalSum_samples))
+print(paste0("Diagonal sum of percents: ",diagonalSum_percents))
+print(paste0("Diagonal sum of percents av.:  %",diagonalSum_percents/(length(factorOrder))))
 ###*****************************

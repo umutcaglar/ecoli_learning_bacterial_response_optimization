@@ -602,20 +602,20 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   ###*****************************
   
   
-  # Non parallel way of combining data
-  #******************************************
-  parallel_Result[counter01]=list(resultListSVM_linear=result_i_linear,
-                                  resultListSVM_radial=result_i_radial,
-                                  resultListSVM_sigmoid=result_i_sigmoid,
-                                  resultListRF=result_i_RF,
-                                  #modelsvm=modelSVM,
-                                  #modelrf=modelRF,
-                                  performanceDf_linear=linearTuneResults,
-                                  performanceDf_radial=radialTuneResults,
-                                  performanceDf_sigmoid=sigmoidTuneResults,
-                                  performanceDfRF=RFTuneResults)
-  
-  #******************************************
+  # # Non parallel way of combining data
+  # #******************************************
+  # parallel_Result[counter01]=list(resultListSVM_linear=result_i_linear,
+  #                                 resultListSVM_radial=result_i_radial,
+  #                                 resultListSVM_sigmoid=result_i_sigmoid,
+  #                                 resultListRF=result_i_RF,
+  #                                 #modelsvm=modelSVM,
+  #                                 #modelrf=modelRF,
+  #                                 performanceDf_linear=linearTuneResults,
+  #                                 performanceDf_radial=radialTuneResults,
+  #                                 performanceDf_sigmoid=sigmoidTuneResults,
+  #                                 performanceDfRF=RFTuneResults)
+  # 
+  # #******************************************
   
   
   # Parallel Way of combining data

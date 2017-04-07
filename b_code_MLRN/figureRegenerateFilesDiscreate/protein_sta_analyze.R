@@ -57,7 +57,8 @@ ndivisionCost=55
 ndivisionGamma=31
 numRepeatsFor_TestTrainSubset_Choice=60
 mtrylistRF=paste(seq(1,7),collapse = "_")
-doNotSave=1 # save the square table figures. 1 means DO NOT save
+doNotSave=0 # save the square table figures. 1 means DO NOT save
+costFunction="F1 corrected"
 
 testConditionsCombined=paste0(testConditions,collapse = "_")
 ###*****************************
@@ -73,7 +74,8 @@ timeStampFile %>%
   dplyr::filter(ndivisionCost==get("ndivisionCost")) %>%
   dplyr::filter(ndivisionGamma==get("ndivisionGamma")) %>%
   dplyr::filter(mtrylistRF==get("mtrylistRF")) %>%
-  dplyr::filter(testConditions==get("testConditionsCombined"))->chosenDataSetInfo
+  dplyr::filter(testConditions==get("testConditionsCombined"))%>%
+  dplyr::filter(costFunction==get("costFunction"))->chosenDataSetInfo
 
 
 if(nrow(chosenDataSetInfo)!=1){stop("one than one file selected")}

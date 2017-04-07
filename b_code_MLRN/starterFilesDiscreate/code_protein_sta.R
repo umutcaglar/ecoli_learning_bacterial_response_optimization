@@ -1,21 +1,9 @@
-# The machine learning script
-
-# The steps for the script
-# This part will be repeated many times with for loop
-#     It take the data (mRNA or Protein), divide the data into 2 parts (intelligently) as training & control
-#     This part will be repeated many times with for loop
-#       In the training data, some of the data is trashed (randomly) in order to make the number of elements in
-#       each group comparible
-#       remaining data will be used for training
-#       after PCA or PCoA (If they have a difference)
-#       we will pick top columns for analyse (sqrt n columns)
-#       depending on the data type we will use discreate SVM or continious SVM (Both are in radial basis)
-#       Than we will use the control set to see
+# The machine learning script # protein sta
 
 
 ### ****************************
-# In this code I will do PCA or PCoA before seperating data.
-# This improves the results. In future it will be replaced with proper rotation of test matrix
+# In this code I will do PCA before seperating data.
+# This improves the results.
 ### ****************************
 
 
@@ -147,7 +135,7 @@ condition=read.csv(file = paste0("../a_results/",metaDataName,".csv"),header = T
 ###*****************************
 # Trial Reletad Parameters
 #dimensionChoice=11
-numRepeatsFor_TestTrainSubset_Choice=60 #how many times will I divide the data as train&tune vs test
+numRepeatsFor_TestTrainSubset_Choice=60 #60 #how many times will I divide the data as train&tune vs test
 percentTest=.20 #Should be a number between 0-1
 percentTune=.20 #Should be a number between 0-1
 # sum of percentTest and percentTune shoul not be smaller than 1
@@ -165,7 +153,7 @@ type_svmChoice="C-classification" #Can be "C-classification" but not "eps-regres
 #kernel_typeChoice="radial"
 
 # SVM tune paramteres
-crossValue=10;
+crossValue=10; #10
 nrepeatValue=1;
 samplingValue="cross"
 
@@ -174,14 +162,14 @@ powerRangeGammaLow=-3 # the span of parameters 2 means data will span 10^-2 to 1
 powerRangeGammaHigh=2 # the span of parameters 2 means data will span 10^-2 to 10^2
 powerRangeCostLow=-1 # the span of parameters 2 means data will span 10^-2 to 10^2
 powerRangeCostHigh=8 # the span of parameters 2 means data will span 10^-2 to 10^2
-ndivisionCost=55 #31 # number of division points within the interval cost (if 5 we will have 10^-2, 10^-1, 10^0, 10^1, 10^2)
-ndivisionGamma=31 #number of division points within the interval gamma
+ndivisionCost=55 #55 #number of division points within the interval cost (if 5 we will have 10^-2, 10^-1, 10^0, 10^1, 10^2)
+ndivisionGamma=31 #31 #number of division points within the interval gamma
 kernelList=c("linear","radial","sigmoid") # kernel vector
 
 # RF Tune parameters
-ntreelistRF=c(1000, 5000, 10000)
-nodesizelistRF=c(1,2,3,4,5)
-mtrylistRF=c(1,2,3,4,5,6,7)
+ntreelistRF=c(1000, 5000, 10000) # c(1000, 5000, 10000)
+nodesizelistRF=c(1,2,3,4,5) # c(1,2,3,4,5)
+mtrylistRF=c(1,2,3,4,5,6,7) # c(1,2,3,4,5,6,7)
 
 # combined set related variables
 batchCorrectionType="separate" # can be together or separate for joined datasets

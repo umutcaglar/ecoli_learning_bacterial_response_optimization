@@ -7,7 +7,8 @@ double F1ScoreErrCppCorrected(StringVector y, StringVector prediction) // The fu
   
   int ySize = y.size
   int predictionSize = y.prediction
-  StringVector combined;
+  int combSize = ySize + predictionSize
+  StringVector combined(combSize);
   
   
   printf("\n");
