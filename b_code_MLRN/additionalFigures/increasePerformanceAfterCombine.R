@@ -106,15 +106,15 @@ for(counter01 in 1: length(modelVector))
   
   VmrnaVSprotein=c(model=modelVector[counter01],
                    comparison="mrna VS protein",
-                   p_value=t.test(x= v_mrna, y= v_protein, paired = TRUE)$p.value)
+                   p_value=t.test(x= v_mrna, y= v_protein)$p.value)
   
   VmrnaproteinVSmrna=c(model=modelVector[counter01],
                    comparison="mrna&protein VS mrna",
-                   p_value=t.test(x= v_mRNA_protein, y= v_mrna, paired = TRUE)$p.value)
+                   p_value=t.test(x= v_mRNA_protein, y= v_mrna)$p.value)
   
   VmrnaproteinVSprotein=c(model=modelVector[counter01],
                    comparison="mrna&protein VS protein",
-                   p_value=t.test(x= v_mRNA_protein, y= v_protein, paired = TRUE)$p.value)
+                   p_value=t.test(x= v_mRNA_protein, y= v_protein)$p.value)
   
   temp_p_valueTable = t(data.frame(VmrnaVSprotein, 
                                 VmrnaproteinVSmrna, 

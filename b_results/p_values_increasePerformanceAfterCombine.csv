@@ -1,13 +1,13 @@
 "","model","comparison","p_value","padj"
-"1","radial","mrna VS protein","0.00309593496054758",0.00619186992109516
-"2","radial","mrna&protein VS mrna","3.74510033779867e-07",2.2470602026792e-06
-"3","radial","mrna&protein VS protein","0.0358539382839589",0.0516159590846911
-"4","sigmoid","mrna VS protein","0.00077742651370704",0.0018658236328969
-"5","sigmoid","mrna&protein VS mrna","1.20701603476315e-06",4.8280641390526e-06
-"6","sigmoid","mrna&protein VS protein","0.448881204089389",0.448881204089389
-"7","linear","mrna VS protein","0.00457440159900798",0.00784183131258511
-"8","linear","mrna&protein VS mrna","7.36698755059937e-08",8.84038506071924e-07
-"9","linear","mrna&protein VS protein","0.0430132992372426",0.0516159590846911
-"10","RF","mrna VS protein","0.082793904476063",0.090320623064796
-"11","RF","mrna&protein VS mrna","8.42170449885928e-05",0.000252651134965778
-"12","RF","mrna&protein VS protein","0.0414550684011772",0.0516159590846911
+"1","radial","mrna VS protein","1.43836065660117e-06",3.45206557584281e-06
+"2","radial","mrna&protein VS mrna","8.86370104654171e-09",3.54548041861668e-08
+"3","radial","mrna&protein VS protein","0.0913178518995255",0.0996194747994824
+"4","sigmoid","mrna VS protein","8.09851403269262e-07",2.42955420980779e-06
+"5","sigmoid","mrna&protein VS mrna","5.2453102523424e-11",6.29437230281088e-10
+"6","sigmoid","mrna&protein VS protein","0.00353029946045251",0.00470706594727001
+"7","linear","mrna VS protein","1.00982742039501e-05",2.01965484079002e-05
+"8","linear","mrna&protein VS mrna","2.25962492207671e-10",1.35577495324603e-09
+"9","linear","mrna&protein VS protein","0.00270709373901523",0.00406064060852284
+"10","RF","mrna VS protein","0.276411271723554",0.276411271723554
+"11","RF","mrna&protein VS mrna","0.00205425971383837",0.00352158808086578
+"12","RF","mrna&protein VS protein","0.010210332086826",0.0122523985041912
