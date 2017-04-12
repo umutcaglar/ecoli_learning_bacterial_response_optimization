@@ -5,6 +5,7 @@ performanceDfSVM<-NULL
 result_ListRF<-NULL
 performanceDfRF<-NULL
 
+#browser()
 for (counter01 in 1:timeStampVector$numRepeatsFor_TestTrainSubset_Choice)
 {
   if(counter01==1)
@@ -65,6 +66,7 @@ result_List_radial$model<-"radial"
 result_List_sigmoid$model<-"sigmoid"
 result_List_RF$model<-"RF"
 
+#browser()
 result_List<-dplyr::bind_rows(result_List_linear,
                               result_List_radial,
                               result_List_sigmoid,
@@ -92,8 +94,9 @@ performanceDf %>%
                 nodesize, mtry, ntree,
                 error=error.val,tryList, tryListNo) %>%
   dplyr::group_by(runNum, model,
-                  cost, gamma, nodesize, mtry, ntree) %>%
-  dplyr::summarize(error=mean(error), dispersion=sd(error))->performanceDf
+                  cost, gamma, nodesize, mtry, ntree)%>%
+  dplyr::summarize(dispersion=sd(error), error=mean(error))->performanceDf
+
 
 performanceDf  %>%
   dplyr::mutate(performance=1-error,
@@ -102,6 +105,7 @@ performanceDf  %>%
   dplyr::select(runNum, model,
                 cost, logCost, gamma, logGamma, nodesize, mtry, ntree,
                 error, performance, dispersion)->performanceDf
+#browser()
 ###*****************************
 
 
@@ -150,55 +154,75 @@ modelFreq %>%
 ###*****************************
 
 
-
-
+#browser()
 ###*****************************
 # Parameter Histograms 2D
 # linear
 performanceDf  %>%
   dplyr::filter(model=="linear") %>%
   dplyr::group_by(cost)%>%
-  dplyr::mutate(meanPerformance=mean(performance))%>%
+  dplyr::mutate(meanPerformance=mean(performance),
+                meanError=mean(error),
+                sdPerformance=sd(performance))%>%
   unique(.) ->linear_performance_cost
 
 fig02a<-ggplot(linear_performance_cost, aes(x=logCost, y=performance, group=logCost))+
   geom_violin(fill="grey80")+
   geom_point(aes(y=meanPerformance))
 
+linear_performance_cost %>% 
+  dplyr::group_by(cost,logCost)%>%
+  dplyr::summarize(meanPerformance=unique(meanPerformance),
+                   meanError=unique(meanError),
+                   sdPerformance=unique(sdPerformance))%>%
+  dplyr::group_by()%>%
+  dplyr::filter(meanPerformance==max(meanPerformance))->max_linear_performance_cost
+
 print(fig02a)
 
-
+#browser()
 # radial
 performanceDf  %>%
   dplyr::filter(model=="radial") %>%
   dplyr::group_by(cost, gamma)%>%
-  dplyr::summarize(meanPerformance=mean(performance), meanError=mean(error),
-                   logCost=unique(logCost), logGamma=unique(logGamma))%>%
+  dplyr::summarize(meanPerformance=mean(performance), 
+                   meanError=mean(error),
+                   sdPerformance=sd(performance),
+                   logCost=unique(logCost), 
+                   logGamma=unique(logGamma))%>%
   unique(.) ->radial_performance_cost_gamma
 
 radial_performance_cost_gamma%>%
   dplyr::group_by()%>%
-  dplyr::filter(meanPerformance==max(meanPerformance))->max_radial_performance_cost_gamma
+  dplyr::filter(meanPerformance==max(meanPerformance))%>%
+  dplyr::select(cost, logCost, gamma, logGamma, 
+                meanPerformance, meanError, sdPerformance)->max_radial_performance_cost_gamma
 
 fig02b<-ggplot(radial_performance_cost_gamma, aes(x=logCost, y=logGamma, z=meanPerformance))+
   geom_tile(aes(fill=meanPerformance), colour = "grey50")+
   scale_fill_continuous(name="Perf.")+
   geom_point(data = max_radial_performance_cost_gamma, aes(x=logCost, y=logGamma), colour="red")
 
+
 print(fig02b)
 
-
+#browser()
 # Sigmoidal
 performanceDf  %>%
   dplyr::filter(model=="sigmoid") %>%
   dplyr::group_by(cost, gamma)%>%
-  dplyr::summarize(meanPerformance=mean(performance), meanError=mean(error),
-                   logCost=unique(logCost), logGamma=unique(logGamma))%>%
+  dplyr::summarize(meanPerformance=mean(performance), 
+                   meanError=mean(error),
+                   sdPerformance=sd(performance),
+                   logCost=unique(logCost), 
+                   logGamma=unique(logGamma))%>%
   unique(.) ->sigmoid_performance_cost_gamma
 
 sigmoid_performance_cost_gamma%>%
   dplyr::group_by()%>%
-  dplyr::filter(meanPerformance==max(meanPerformance))->max_sigmoid_performance_cost_gamma
+  dplyr::filter(meanPerformance==max(meanPerformance))%>%
+  dplyr::select(cost, logCost, gamma, logGamma, 
+                meanPerformance, meanError, sdPerformance)->max_sigmoid_performance_cost_gamma
 
 fig02c<-ggplot(sigmoid_performance_cost_gamma, aes(x=logCost, y=logGamma, z=meanPerformance))+
   geom_tile(aes(fill=meanPerformance), colour = "grey50")+
@@ -207,30 +231,34 @@ fig02c<-ggplot(sigmoid_performance_cost_gamma, aes(x=logCost, y=logGamma, z=mean
 
 print(fig02c)
 
-
+#browser()
 # RF
 performanceDf  %>%
   dplyr::filter(model=="RF") %>%
   dplyr::group_by(nodesize, mtry, ntree)%>%
-  dplyr::summarize(meanPerformance=mean(performance), meanError=mean(error))%>%
+  dplyr::summarize(meanPerformance=mean(performance), 
+                   meanError=mean(error),
+                   sdPerformance=sd(performance))%>%
   unique(.) %>%
   dplyr::group_by()%>%
-  dplyr::mutate(maximum=factor(ifelse(meanPerformance==max(meanPerformance),1,0)))->RF_performance_nodsize_mtry_ntree
+  dplyr::mutate(maximumCheck=factor(ifelse(meanPerformance==max(meanPerformance),1,0)))->RF_performance_nodsize_mtry_ntree
 
 RF_performance_nodsize_mtry_ntree%>%
   dplyr::group_by()%>%
-  dplyr::filter(meanPerformance==max(meanPerformance))->max_RF_performance_nodsize_mtry_ntree
+  dplyr::filter(meanPerformance==max(meanPerformance))%>%
+  dplyr::select(nodesize, mtry, ntree, 
+                meanPerformance, meanError, sdPerformance)->max_RF_performance_nodsize_mtry_ntree
 
 fig02d<-ggplot(RF_performance_nodsize_mtry_ntree, aes(x=nodesize, y=mtry, z=meanPerformance))+
   facet_grid(.~ntree)+
   geom_tile(aes(fill=meanPerformance), colour = "grey50")+
   scale_fill_continuous(name="Perf.")+
-  geom_point(aes(colour="red", alpha=maximum))+
+  geom_point(aes(colour="red", alpha=maximumCheck))+
   scale_alpha_discrete(range = c(0,1), guide=FALSE)+
   scale_color_discrete(guide=FALSE)
 
 print(fig02d)
-
+#browser()
 
 # Combine all 4 plots fig02a, fig02b, fig02c, fig02d
 combinedParameters<-cowplot::ggdraw() +
@@ -601,4 +629,12 @@ print(paste0("multi class macro F1 score: ", combF1Score))
 print(paste0("Diagonal sum of samples. (Before normalization) :",diagonalSum_samples))
 print(paste0("Diagonal sum of percents: ",diagonalSum_percents))
 print(paste0("Diagonal sum of percents av.:  %",diagonalSum_percents/(length(factorOrder))))
+print("max linear performance: ")
+print(max_linear_performance_cost)
+print("max radial performance: ")
+print(max_radial_performance_cost_gamma)
+print("max sigmoid performance: ")
+print(max_sigmoid_performance_cost_gamma)
+print("max RF performance: ")
+print(max_RF_performance_nodsize_mtry_ntree)
 ###*****************************

@@ -1,10 +1,4 @@
-# The machine learning script # int protein
-
-
-### ****************************
-# In this code I will do PCA or PCoA before seperating data.
-# This improves the results. 
-### ****************************
+# ROC curve genefating script -proteins
 
 
 ###*****************************
@@ -46,16 +40,11 @@ require("e1071") # for svm
 require("MASS") # to find matrix inverses
 require("randomForest") # for the random forest
 require("Rcpp")
+require("ROCR")
 
 # Batch Correction
 require("sva") # only for machine learning
 
-# Text manipulation
-require("stringr")
-
-# Parallel
-require("doMC")
-require("foreach")
 ###*****************************
 
 
@@ -71,23 +60,10 @@ source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")
 ###*****************************
 
 
-#********************************************
-# ARRANGE BACKENDS
-## use the multicore library
-# a.
-ProcCount <- 6 # registers specified number of workers  or
-registerDoMC(ProcCount) # Or, reserve all all available cores
-# b.
-#registerDoMC()  # Automatically assign cores
-
-getDoParWorkers() # check how many cores (workers) are registered
-#********************************************
-
-
 ###*****************************
 # Find the csv files that need to be imported
 dataName=name_data(initialValue=c("resDf"), # can be c("genes0.05","genes_P0.05Fold2","resDf")
-                   dataType = "int_protein",
+                   dataType = "protein",
                    # can be "rna", "mrna", "protein", "protein_wo_NA",
                    #        "int_mrna_protein", "int_mrna", "int_protein"
                    badDataSet = "set00", # can be "set00",set01","set02", "set03"
@@ -135,14 +111,13 @@ condition=read.csv(file = paste0("../a_results/",metaDataName,".csv"),header = T
 ###*****************************
 # Trial Reletad Parameters
 #dimensionChoice=11
-numRepeatsFor_TestTrainSubset_Choice=60 #60 #how many times will I divide the data as train&tune vs test
+numRepeatsFor_TestTrainSubset_Choice=200 #60 #how many times will I divide the data as train&tune vs test
 percentTest=.20 #Should be a number between 0-1
-percentTune=.20 #Should be a number between 0-1
 # sum of percentTest and percentTune shoul not be smaller than 1
 testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase") # different combinations that we will look into
 # Options carbonSource, growthPhase, Mg_mM_Levels, Na_mM_Levels
 dimReductionType="PCA" # Can be PCA, PCoA, noReduction
-dimensionChoiceValue=10 #10 #does not work with dimReductionType="noReduction"
+dimensionChoiceValue=10 # does not work with dimReductionType="noReduction"
 
 batchCorrectionMethod<-"fSVA"
 classWeightInputType="on SVA" # for probabilistic it should be after SVA
@@ -152,24 +127,21 @@ similarDataClassifierForBatch=c("Na_mM","Mg_mM","carbonSource_Short","growthPhas
 type_svmChoice="C-classification" #Can be "C-classification" but not "eps-regression"
 #kernel_typeChoice="radial"
 
-# SVM tune paramteres
-crossValue=10; #10
-nrepeatValue=1;
-samplingValue="cross"
-
-# SVM parameter Span
-powerRangeGammaLow=-3 # the span of parameters 2 means data will span 10^-2 to 10^2
-powerRangeGammaHigh=2 # the span of parameters 2 means data will span 10^-2 to 10^2
-powerRangeCostLow=-1 # the span of parameters 2 means data will span 10^-2 to 10^2
-powerRangeCostHigh=8 # the span of parameters 2 means data will span 10^-2 to 10^2
-ndivisionCost=55 #55 #number of division points within the interval cost (if 5 we will have 10^-2, 10^-1, 10^0, 10^1, 10^2)
-ndivisionGamma=31 #31 #number of division points within the interval gamma
+# SVM parameter
+Cost_linear=1
+Cost_radial=2
+Gamma_radial=3
+Cost_sigmoidal=4
+Gamma_sigmoidal=5
 kernelList=c("linear","radial","sigmoid") # kernel vector
 
-# RF Tune parameters
-ntreelistRF=c(1000, 5000, 10000)
-nodesizelistRF=c(1,2,3,4,5)
-mtrylistRF=c(1,2,3,4,5,6,7)
+# RF parameters
+ntree=6
+nodesize=7
+mtry=8
+
+# Unnecessary Parameter
+crossValue=1
 
 # combined set related variables
 batchCorrectionType="separate" # can be together or separate for joined datasets
@@ -191,9 +163,9 @@ costFunction="F1_corrected"
 ###*****************************
 # Remaining parts of the code
 if(dataNameDF$objectName.pick_data!="int_mrna_protein")
-{source("pipeline/machineLearning_mainCode.R")}
+{source("roc_curves/ROC_mainCode.R")}
 
 if(dataNameDF$objectName.pick_data=="int_mrna_protein")
-{source("pipeline/machineLearning_MainCodeComb.R")}
+{source("roc_curves/ROC_mainCodeComb.R")}
 ###*****************************
 
