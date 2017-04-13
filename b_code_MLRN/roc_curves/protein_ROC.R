@@ -57,6 +57,7 @@ source("pipeline/dataPreperationComb_func.R")
 source("pipeline/dataPreperation_func.R")
 source("../a_code_dataPreperation_RNA&Protein/data_naming_functions.R")
 source("../a_code_dataPreperation_RNA&Protein/replace_fun.R")
+source("roc_curves/multiclassROC.R")
 ###*****************************
 
 
@@ -111,7 +112,7 @@ condition=read.csv(file = paste0("../a_results/",metaDataName,".csv"),header = T
 ###*****************************
 # Trial Reletad Parameters
 #dimensionChoice=11
-numRepeatsFor_TestTrainSubset_Choice=200 #60 #how many times will I divide the data as train&tune vs test
+numRepeatsFor_TestTrainSubset_Choice=20 #60 #how many times will I divide the data as train&tune vs test
 percentTest=.20 #Should be a number between 0-1
 # sum of percentTest and percentTune shoul not be smaller than 1
 testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase") # different combinations that we will look into
@@ -128,17 +129,17 @@ type_svmChoice="C-classification" #Can be "C-classification" but not "eps-regres
 #kernel_typeChoice="radial"
 
 # SVM parameter
-Cost_linear=1
-Cost_radial=2
-Gamma_radial=3
-Cost_sigmoidal=4
-Gamma_sigmoidal=5
+Cost_linear=100
+Cost_radial=146779.9
+Gamma_radial=0.0003162278
+Cost_sigmoidal=10000
+Gamma_sigmoidal=0.01
 kernelList=c("linear","radial","sigmoid") # kernel vector
 
 # RF parameters
-ntree=6
-nodesize=7
-mtry=8
+ntree_RF=1000
+nodesize_RF=3
+mtry_RF=2
 
 # Unnecessary Parameter
 crossValue=1
@@ -157,6 +158,9 @@ parallel_com = TRUE
 
 # CostFunction
 costFunction="F1_corrected"
+
+# Overal Name
+testName="protein"
 ###*****************************
 
 

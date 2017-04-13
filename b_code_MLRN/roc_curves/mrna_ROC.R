@@ -110,7 +110,7 @@ condition=read.csv(file = paste0("../a_results/",metaDataName,".csv"),header = T
 ###*****************************
 # Trial Reletad Parameters
 #dimensionChoice=11
-numRepeatsFor_TestTrainSubset_Choice=200 #60 #how many times will I divide the data as train&tune vs test
+numRepeatsFor_TestTrainSubset_Choice=20 #60 #how many times will I divide the data as train&tune vs test
 percentTest=.20 #Should be a number between 0-1
 # sum of percentTest and percentTune shoul not be smaller than 1
 testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase") # different combinations that we will look into
@@ -156,6 +156,9 @@ parallel_com = TRUE
 
 # CostFunction
 costFunction="F1_corrected"
+
+# Overal Name
+testName="mRNA"
 ###*****************************
 
 
