@@ -235,4 +235,6 @@ fig02<-ggplot(q,aes(x=x.val, y=y.val, group=chosenCondition, colour=chosenCondit
   xlab("tpr")+ylab("fpr")
 
 print(fig02)
+
+cowplot::save_plot(filename = "../b_figures/ROC_curves_single.jpeg", plot = fig02, ncol = 2, nrow = 1)
 ###*****************************

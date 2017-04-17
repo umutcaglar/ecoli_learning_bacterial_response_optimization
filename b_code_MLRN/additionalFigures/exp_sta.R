@@ -92,7 +92,10 @@ print(fig01)
 
 ###*****************************
 # Save figure
-cowplot::save_plot(filename = "../b_figures/changePerformanceExpSta_testAll.jpeg", plot = fig01, ncol = 1, nrow = 1.2)
+cowplot::save_plot(filename = "../b_figures/changePerformanceExpSta_testAll.jpeg", 
+                   plot = fig01, ncol = 1, nrow = 1.2)
+cowplot::save_plot(filename = "../b_figures/changePerformanceExpSta_testAll_ppt.jpeg", 
+                   plot = fig01, ncol = 2, nrow = 1.4)
 ###*****************************
 
 

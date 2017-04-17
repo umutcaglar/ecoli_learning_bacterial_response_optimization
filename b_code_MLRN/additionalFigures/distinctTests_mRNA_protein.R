@@ -103,7 +103,11 @@ print(fig01)
 
 ###*****************************
 # Save figure
-cowplot::save_plot(filename = "../b_figures/distinctTests_mRNA_Protein.jpeg", plot = fig01, ncol = 2, nrow = 2)
+cowplot::save_plot(filename = "../b_figures/distinctTests_mRNA_Protein.jpeg", 
+                   plot = fig01, ncol = 2, nrow = 2)
+
+cowplot::save_plot(filename = "../b_figures/distinctTests_mRNA_Protein_ppt.jpeg", 
+                   plot = fig01, ncol = 2, nrow = 1.4)
 ###*****************************
 
 
@@ -157,6 +161,9 @@ fig02b<-cowplot::plot_grid(figComb_mrna_carbon, figComb_protein_carbon,
 
 print(fig02b)
 
+
+cowplot::save_plot(filename = "../b_figures/distinctTestsConfMatrix_mRNA_Protein_ppt.jpeg", 
+                   plot = fig02a, ncol = 4, nrow = 2)
 
 cowplot::save_plot(filename = "../b_figures/distinctTestsConfMatrix_mRNA_Protein.jpeg", 
                    plot = fig02b, ncol = 2, nrow = 4)

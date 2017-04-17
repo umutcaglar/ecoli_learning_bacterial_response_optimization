@@ -76,7 +76,10 @@ print(fig01)
 
 ###*****************************
 # Save figure
-cowplot::save_plot(filename = "../b_figures/compare_mRNA_protein_models.jpeg", plot = fig01, ncol = 2, nrow = 2)
+cowplot::save_plot(filename = "../b_figures/compare_mRNA_protein_models.jpeg", 
+                   plot = fig01, ncol = 2, nrow = 2)
+cowplot::save_plot(filename = "../b_figures/compare_mRNA_protein_models_ppt.jpeg", 
+                   plot = fig01, ncol = 2, nrow = 1.4)
 ###*****************************
 
 
