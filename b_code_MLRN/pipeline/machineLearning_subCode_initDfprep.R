@@ -193,6 +193,57 @@ inputMetaDf %>%
 
 ###*****************************
 # Hand Made Error Function
+F1ScoreErr<-function(y,prediction)
+{
+  beta=1
+  y=make.names(y)
+  prediction=make.names(prediction)
+  a=as.vector(y); b=as.vector(prediction)
+  
+  inputs=sort(unique(c(a,b)))
+  
+  TP=c();
+  FP=c();
+  FN=c();
+  F1=c();
+  
+  for (counter04 in 1:length(inputs))
+  {
+    testFor=inputs[counter04]
+    
+    sum(a==testFor & b==testFor)->TP[counter04]
+    sum(a!=testFor & b==testFor)->FP[counter04]
+    sum(a==testFor & b!=testFor)->FN[counter04]
+    
+    F1[counter04]=(2*TP[counter04])/(2*TP[counter04]+FP[counter04]+FN[counter04])
+    if(0==2*TP[counter04]+FP[counter04]+FN[counter04]){F1[counter04]==0}
+  }
+  
+  # print(paste0("TP: ", paste0(TP, collapse = " ")));
+  # print(paste0("FP: ", paste0(FP, collapse = " ")));
+  # print(paste0("FN: ", paste0(FN, collapse = " ")));
+  # print(paste0("F1: ", paste0(F1, collapse = " ")));
+  
+  # Controls
+  sum_TP = sum(TP, na.rm =T)
+  sum_FP = sum(FP, na.rm =T)
+  sum_FN = sum(FN, na.rm =T)
+  if(sum_FP!=sum_FN){browser()}
+  if(length(y)!=length(prediction)){browser()}
+  if(length(y)!=sum_TP + sum_FP){browser()}
+  
+  F1_err=1-mean(F1, na.rm =T)
+  # print(paste0("F1_err: ", F1_err));
+  
+  # browser()
+  return(F1_err)
+}
+
+
+
+
+
+
 F1ScoreErr1<-function(y,prediction)
 {
   beta=1

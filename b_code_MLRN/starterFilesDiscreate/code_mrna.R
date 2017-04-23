@@ -184,7 +184,7 @@ tuning = TRUE
 parallel_com = TRUE
 
 # CostFunction
-costFunction="F1_corrected"
+costFunction="F1_final"
 ###*****************************
 
 

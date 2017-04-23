@@ -28,6 +28,22 @@ source("figureRegenerateFilesDiscreate/int_mRNA_analyze.R")
 source("figureRegenerateFilesDiscreate/int_protein_analyze.R")
 source("figureRegenerateFilesDiscreate/int_mRNA_protein_analyze.R")
 
+# intersection distinct results
+source("figureRegenerateFilesDiscreate/int_mRNA_carbon_analyze.R")
+source("figureRegenerateFilesDiscreate/int_mRNA_Mg_analyze.R")
+source("figureRegenerateFilesDiscreate/int_mRNA_Na_analyze.R")
+source("figureRegenerateFilesDiscreate/int_mRNA_phase_analyze.R")
+
+source("figureRegenerateFilesDiscreate/int_protein_carbon_analyze.R")
+source("figureRegenerateFilesDiscreate/int_protein_Mg_analyze.R")
+source("figureRegenerateFilesDiscreate/int_protein_Na_analyze.R")
+source("figureRegenerateFilesDiscreate/int_protein_phase_analyze.R")
+
+source("figureRegenerateFilesDiscreate/int_mrna_protein_carbon_analyze.R")
+source("figureRegenerateFilesDiscreate/int_mrna_protein_Mg_analyze.R")
+source("figureRegenerateFilesDiscreate/int_mrna_protein_Na_analyze.R")
+source("figureRegenerateFilesDiscreate/int_mrna_protein_phase_analyze.R")
+
 # phase difference
 source("figureRegenerateFilesDiscreate/mRNA_exp_analyze.R")
 source("figureRegenerateFilesDiscreate/mRNA_sta_analyze.R")

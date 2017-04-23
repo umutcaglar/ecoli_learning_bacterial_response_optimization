@@ -223,7 +223,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
         dplyr::left_join(tuneConditionInvestigated, ., by = "dataSet")->predictedResults
       
       if(type_svmChoice=="C-classification")
-      {linearTuneResults$error.val[counter03]=F1ScoreErr1(predictedResults$conditionInvestigated,
+      {linearTuneResults$error.val[counter03]=F1ScoreErr(predictedResults$conditionInvestigated,
                                                                      predictedResults$predictedValue)}
       if(type_svmChoice=="eps-regression")
       {linearTuneResults$error.val[counter03]=1-
@@ -328,7 +328,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
           dplyr::left_join(tuneConditionInvestigated, ., by = "dataSet")->predictedResults
         
         if(type_svmChoice=="C-classification")
-        {radialTuneResults$error.val[counter03]=F1ScoreErr1(predictedResults$conditionInvestigated,
+        {radialTuneResults$error.val[counter03]=F1ScoreErr(predictedResults$conditionInvestigated,
                                                                        predictedResults$predictedValue)}
         if(type_svmChoice=="eps-regression")
         {radialTuneResults$error.val[counter03]=1-
@@ -430,7 +430,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
         
         
         if(type_svmChoice=="C-classification")
-        {sigmoidTuneResults$error.val[counter03]=F1ScoreErr1(predictedResults$conditionInvestigated,
+        {sigmoidTuneResults$error.val[counter03]=F1ScoreErr(predictedResults$conditionInvestigated,
                                                                         predictedResults$predictedValue)}
         if(type_svmChoice=="eps-regression")
         {sigmoidTuneResults$error.val[counter03]=1-
@@ -542,7 +542,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
             dplyr::left_join(tuneConditionInvestigated, ., by = "dataSet")->predictedResults
           
           if(type_svmChoice=="C-classification")
-          {RFTuneResults$error.val[counter03]=F1ScoreErr1(predictedResults$conditionInvestigated,
+          {RFTuneResults$error.val[counter03]=F1ScoreErr(predictedResults$conditionInvestigated,
                                                                      predictedResults$predictedValue)}
           if(type_svmChoice=="eps-regression")
           {RFTuneResults$error.val[counter03]=1-

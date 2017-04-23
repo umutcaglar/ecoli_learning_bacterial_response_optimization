@@ -140,6 +140,26 @@ dplyr::bind_cols(p_valueDF, padj)->p_valueDF
 write.csv(x = p_valueDF, file = "../b_results/p_values_increasePerformanceAfterCombine.csv")
 ###*****************************
 
+winnerModels%>%
+  dplyr::group_by(model, analyzeName)%>%
+  dplyr::summarise(meanPerformance_test=unique(meanPerformance_test),
+                   sdPerformance_test=sd(performance_test))->q1
+print(q1)
+
+
+k=48*16*5
+counter02=0
+for(counter01 in 1:1000)
+{
+  q2a=rnorm(n=k, mean = 0.7074284, sd = 0.10546724)
+  q2b=rnorm(n=k, mean = 0.6961754, sd = 0.09559149)
+  tResult=t.test(x = q2a, y = q2b, paired = F)
+  p_value=tResult$p.value
+  if(p_value<0.05){counter02=counter02+1}
+}
+print(counter02)
+
+
 
 
 
