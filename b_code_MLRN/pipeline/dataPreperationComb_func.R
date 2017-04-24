@@ -100,7 +100,8 @@ dataPrepearningCombFunction<-function(meta_df_Train, meta_df_Test,
   
   ###*****************************
   # Calculate Dimension Choice Automatically
-  dimensionChoice=round(sqrt(nrow(meta_df_Train)))
+  # dimensionChoice=round(sqrt(nrow(meta_df_Train)))
+  dimensionChoice=dimensionChoiceValue
   ###*****************************
   
   
@@ -109,6 +110,7 @@ dataPrepearningCombFunction<-function(meta_df_Train, meta_df_Test,
   
   # generate the list of dimensions that will be selected from df by using dplyr::select
   selectList=c("conditionInvestigated",paste0("Axis.",seq(1,dimensionChoice))) 
+  selectList=intersect(selectList, colnames(mapped_train_DF))
   
   # selection of wanted dimensions with dplyr::select for "mapped_train_DF" and "mapped_test_DF"
   mapped_train_DF %>% 

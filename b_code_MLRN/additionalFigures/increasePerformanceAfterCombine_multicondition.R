@@ -123,6 +123,17 @@ fig02<-ggplot(winnerModels, aes(x=dataSource, y=meanPerformance_test, group=mode
   labs(title = "All conditions") + xlab("Model") + ylab("F1 performance on test data")
 
 
+winnerModels%>%
+  dplyr::group_by(model, testFor, dataSource)%>%
+  dplyr::summarise(meanPerformance_test=unique(meanPerformance_test))%>%
+  dplyr::group_by(model,dataSource)%>%
+  dplyr::summarise(meanPerformance_test=mean(meanPerformance_test))->winnerModels_short
+
+fig03<-ggplot(winnerModels_short, aes(x=dataSource, y=meanPerformance_test, group=model, colour=model))+
+  geom_point()+
+  geom_line()+
+  theme_bw()+
+  labs(title = "All conditions") + xlab("Model") + ylab("F1 performance on test data")
 ###*****************************
 
 

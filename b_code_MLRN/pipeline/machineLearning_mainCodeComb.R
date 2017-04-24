@@ -1,3 +1,5 @@
+# Machine learning main code combined.
+
 #Initial DataFrame preperation v_new
 ###*****************************####
 source("pipeline/machineLearning_subCode_initDfprep.R")
@@ -24,6 +26,9 @@ mainDataFrame_protein %>%
 
 #******************************************
 # --MAIN LOOP-- do the parallel processing
+# parallel_Result=list() # errer tracking
+# for(counter01 in 1:numRepeatsFor_TestTrainSubset_Choice)
+
 parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %dopar%
 {
   # Find out data sets that will go into machine learning algorithm
