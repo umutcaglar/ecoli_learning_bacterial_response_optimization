@@ -139,9 +139,9 @@ fig03<-ggplot(winnerModels_short, aes(x=dataSource, y=meanPerformance_test, grou
 
 ###*****************************
 # Save figure
-cowplot::save_plot(filename = "../b_figures/increasePerformanceAfterCombine_testAll.jpeg", 
+cowplot::save_plot(filename = "../b_figures/increasePerformanceAfterCombine_multicondition_testOne.jpeg", 
                    plot = fig01, ncol = 2, nrow = 2)
-cowplot::save_plot(filename = "../b_figures/increasePerformanceAfterCombine_testAll_ppt.jpeg", 
+cowplot::save_plot(filename = "../b_figures/increasePerformanceAfterCombine_multicondition_testOne_ppt.jpeg", 
                    plot = fig01, ncol = 2, nrow = 1.4)
 ###*****************************
 
@@ -198,7 +198,7 @@ colnames(padj)<-"padj"
 
 dplyr::bind_cols(p_valueDF, padj)->p_valueDF
 
-write.csv(x = p_valueDF, file = "../b_results/p_values_increasePerformanceAfterCombine.csv")
+write.csv(x = p_valueDF, file = "../b_results/p_values_increasePerformanceAfterCombine_multicondition.csv")
 ###*****************************
 
 winnerModels%>%
