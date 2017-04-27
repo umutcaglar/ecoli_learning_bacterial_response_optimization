@@ -14,7 +14,7 @@ for (counter01 in 1:timeStampVector$numRepeatsFor_TestTrainSubset_Choice)
     result_List_radial=parallel_Result[[counter01]]$resultListSVM_radial
     result_List_sigmoid=parallel_Result[[counter01]]$resultListSVM_sigmoid
     result_List_RF=parallel_Result[[counter01]]$resultListRF
-
+    
     performanceDf_linear=parallel_Result[[counter01]]$performanceDf_linear
     performanceDf_linear$runNum=1
     performanceDf_radial=parallel_Result[[counter01]]$performanceDf_radial
@@ -24,26 +24,26 @@ for (counter01 in 1:timeStampVector$numRepeatsFor_TestTrainSubset_Choice)
     performanceDf_RF=parallel_Result[[counter01]]$performanceDfRF
     performanceDf_RF$runNum=1
   }
-
+  
   if(counter01!=1)
   {
     result_List_linear=dplyr::bind_rows(result_List_linear, parallel_Result[[counter01]]$resultListSVM_linear)
     result_List_radial=dplyr::bind_rows(result_List_radial, parallel_Result[[counter01]]$resultListSVM_radial)
     result_List_sigmoid=dplyr::bind_rows(result_List_sigmoid, parallel_Result[[counter01]]$resultListSVM_sigmoid)
     result_List_RF=dplyr::bind_rows(result_List_RF,parallel_Result[[counter01]]$resultListRF)
-
+    
     performanceDf_linear_temp = parallel_Result[[counter01]]$performanceDf_linear
     performanceDf_linear_temp$runNum=counter01
     performanceDf_linear=dplyr::bind_rows(performanceDf_linear, performanceDf_linear_temp)
-
+    
     performanceDf_radial_temp = parallel_Result[[counter01]]$performanceDf_radial
     performanceDf_radial_temp$runNum=counter01
     performanceDf_radial=dplyr::bind_rows(performanceDf_radial, performanceDf_radial_temp)
-
+    
     performanceDf_sigmoid_temp = parallel_Result[[counter01]]$performanceDf_sigmoid
     performanceDf_sigmoid_temp$runNum=counter01
     performanceDf_sigmoid=dplyr::bind_rows(performanceDf_sigmoid, performanceDf_sigmoid_temp)
-
+    
     performanceDf_RF_temp = parallel_Result[[counter01]]$performanceDfRF
     performanceDf_RF_temp$runNum=counter01
     performanceDf_RF=dplyr::bind_rows(performanceDf_RF, performanceDf_RF_temp)
@@ -105,16 +105,63 @@ performanceDf  %>%
   dplyr::select(runNum, model,
                 cost, logCost, gamma, logGamma, nodesize, mtry, ntree,
                 error, performance, dispersion)->performanceDf
-#browser()
 ###*****************************
 
+
+###*****************************
+F1ScoreErr<-function(y,prediction)
+{
+  beta=1
+  y=make.names(y)
+  prediction=make.names(prediction)
+  a=as.vector(y); b=as.vector(prediction)
+  
+  inputs=sort(unique(c(a,b)))
+  
+  TP=c();
+  FP=c();
+  FN=c();
+  F1=c();
+  
+  for (counter04 in 1:length(inputs))
+  {
+    testFor=inputs[counter04]
+    
+    sum(a==testFor & b==testFor)->TP[counter04]
+    sum(a!=testFor & b==testFor)->FP[counter04]
+    sum(a==testFor & b!=testFor)->FN[counter04]
+    
+    F1[counter04]=(2*TP[counter04])/(2*TP[counter04]+FP[counter04]+FN[counter04])
+    if(0==2*TP[counter04]+FP[counter04]+FN[counter04]){F1[counter04]==0}
+  }
+  
+  # print(paste0("TP: ", paste0(TP, collapse = " ")));
+  # print(paste0("FP: ", paste0(FP, collapse = " ")));
+  # print(paste0("FN: ", paste0(FN, collapse = " ")));
+  # print(paste0("F1: ", paste0(F1, collapse = " ")));
+  
+  # Controls
+  sum_TP = sum(TP, na.rm =T)
+  sum_FP = sum(FP, na.rm =T)
+  sum_FN = sum(FN, na.rm =T)
+  if(sum_FP!=sum_FN){browser()}
+  if(length(y)!=length(prediction)){browser()}
+  if(length(y)!=sum_TP + sum_FP){browser()}
+  
+  F1_err=1-mean(F1, na.rm =T)
+  # print(paste0("F1_err: ", F1_err));
+  
+  # browser()
+  return(F1_err)
+}
+###*****************************
 
 
 ###*****************************
 # Find the 240 =60 x 4 best models
 result_List %>%
   dplyr::group_by(TestTrainSubsetNo, model) %>%
-  dplyr::mutate(error_test=F1ScoreErrCpp(predictedValue, conditionInvestigated))%>%
+  dplyr::mutate(error_test=F1ScoreErr(predictedValue, conditionInvestigated))%>%
   dplyr::summarize(performance=unique(performance),
                    cost = unique(cost),
                    gamma = unique(gamma),
@@ -301,9 +348,27 @@ winnerModelResults %>%
 winnerModelResultsSum%>%
   dplyr::filter(predictedValue==conditionInvestigated)%>%
   .$combinationLength %>%sum(.)->diagonalSum_samples
+
 winnerModelResultsSum%>%
-  dplyr::filter(predictedValue==conditionInvestigated)%>%
-  .$percentPrediction %>%sum(.)->diagonalSum_percents
+  dplyr::filter(predictedValue==conditionInvestigated)->diagonal_percents
+
+diagonal_percents%>%
+  .$percentPrediction %>%
+  sum(.)->diagonalSum_percents
+
+inputMetaDf%>%
+  dplyr::group_by(conditionInvestigated)%>%
+  dplyr::summarise(numCond=n())->numTrainingSamples
+
+diagonal_percents %>%
+  dplyr::select(conditionInvestigated, percentPrediction)%>%
+  dplyr::left_join(.,numTrainingSamples)->correlationDf
+
+fig_correlation=ggplot(data = correlationDf, aes(x=numCond, y=percentPrediction))+
+  geom_point(size=2)+
+  ylim(c(0,100))+
+  geom_text_repel(aes(label = conditionInvestigated),size=3)+
+  xlab("Number of samples in training")+ylab("percentage of correct predictions")
 ###*****************************####
 
 
@@ -397,7 +462,7 @@ fig03<-ggplot(winnerModelResultsSum, aes( y=conditionInvestigated,x= predictedVa
   
   geom_tile(aes(fill=percentPrediction),colour = "grey50")+ # num percent variant
   scale_fill_gradient(low = "White", high = "Black",limits=c(0,100), # num percent variant
-                       name = "% Prediction")+
+                      name = "% Prediction")+
   geom_text(aes(label=sprintf("%1.0f", percentPrediction)),size=5, color="white")+ # num percent variant
   
   scale_x_discrete(expand=c(0,0), breaks=1:length(levels(winnerModelResultsSum$conditionInvestigated))) +   # Set x-breaks here
@@ -454,7 +519,7 @@ print(figPercent)
 
 
 fig05<-ggplot(tidyDF, aes( x=axis1, y=condition))+
-
+  
   geom_tile(aes(fill=variable))+
   scale_fill_manual(values=colorCodes)+ # Color bar
   geom_text(aes(label=variable_Short),fontface="bold") +
@@ -568,23 +633,30 @@ if(!doNotSave==1)
                      base_aspect_ratio=1.333, base_height = 6,
                      units = "in", useDingbats=FALSE, limitsize=FALSE,
                      ncol = 1.4, nrow=1.2)
-
-
+  
+  
   # Save Figure with legend
   cowplot::save_plot(figComb_wL,
                      filename = paste0("../b_figures/","fig_withLegend_",analyzeName,".pdf"),
                      base_aspect_ratio=1.333, base_height = 6,
                      units = "in", useDingbats=FALSE, limitsize=FALSE,
                      ncol = 1.4, nrow=1.2)
-
+  
   # Save Figure Object
   fileNameCollapsed=paste(fileName,collapse = "_")
   save(list = c("figComb","figComb_wL","percentLegendObj","color_legend"),
        file = paste0("../b_figures/","fig_obj_",analyzeName,".Rda"))
-
+  
   ##Save Full Color Legend
   save(list = c("color_legend"),
        file = paste0("../b_figures/","ColorLegend_",analyzeName,".Rda"))
+  
+  # Save correlation between sample number and end result
+  cowplot::save_plot(fig_correlation,
+                     filename = paste0("../b_figures/","fig_correlation_",analyzeName,".pdf"),
+                     base_aspect_ratio=1.333, base_height = 6,
+                     units = "in", useDingbats=FALSE, limitsize=FALSE,
+                     ncol = 1.4, nrow=1.2)
   ###*****************************
 }
 ###*****************************
@@ -595,7 +667,7 @@ if(!doNotSave==1)
 # a) generate meta vector for individual analyze and but it into data file
 modelFreqVec<-as.vector(t(modelFreq[,2])); names(modelFreqVec)<-as.vector(t(modelFreq[,1]))
 combF1Score<-
-  1-F1ScoreErrCpp(winnerModelResults$predictedValue,winnerModelResults$conditionInvestigated)
+  1-F1ScoreErr(winnerModelResults$predictedValue,winnerModelResults$conditionInvestigated)
 
 chosenDataSetInfo->metaVector
 metaVector$diagonalSum_samples=diagonalSum_samples

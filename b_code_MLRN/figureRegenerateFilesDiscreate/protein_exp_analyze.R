@@ -58,7 +58,7 @@ ndivisionGamma=31
 numRepeatsFor_TestTrainSubset_Choice=60
 mtrylistRF=paste(seq(1,7),collapse = "_")
 doNotSave=0 # save the square table figures. 1 means DO NOT save
-costFunction="F1 corrected"
+costFunction="F1_final"
 
 testConditionsCombined=paste0(testConditions,collapse = "_")
 ###*****************************

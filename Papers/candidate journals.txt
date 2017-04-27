@@ -1,16 +1,13 @@
-first shot (one of)
+A
 
-nature communications
-molecular systems biology
+* nature communications
+* molecular systems biology
 
+B
 
-second try
+* plos computational biology
 
-plos computational biology
+C
 
-
-
-last resort
-
-plos one
-peerJ
+* plos one
+* peerJ

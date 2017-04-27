@@ -76,6 +76,8 @@ timeStampFile %>%
   dplyr::filter(costFunction==get("costFunction"))->chosenDataSetInfo
 
 
+# chosenDataSetInfo <- chosenDataSetInfo[2,]
+
 if(nrow(chosenDataSetInfo)!=1){stop("one than one file selected")}
 
 fileName=as.vector(chosenDataSetInfo$fileName)

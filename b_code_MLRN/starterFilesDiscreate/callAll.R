@@ -32,6 +32,18 @@ source("starterFilesDiscreate/code_mrna_sta.R")
 source("starterFilesDiscreate/code_protein_exp.R")
 source("starterFilesDiscreate/code_protein_sta.R")
 
+# call mrna subs
+source("starterFilesDiscreate/code_mrna_carbon.R")
+source("starterFilesDiscreate/code_mrna_phase.R")
+source("starterFilesDiscreate/code_mrna_Mg.R")
+source("starterFilesDiscreate/code_mrna_Na.R")
+
+# call for protein subs
+source("starterFilesDiscreate/code_protein_carbon.R")
+source("starterFilesDiscreate/code_protein_phase.R")
+source("starterFilesDiscreate/code_protein_Mg.R")
+source("starterFilesDiscreate/code_protein_Na.R")
+
 # Call intersected data combinations
 source("starterFilesDiscreate/code_int_mrna_carbon.R")
 source("starterFilesDiscreate/code_int_mrna_Mg.R")
@@ -48,17 +60,6 @@ source("starterFilesDiscreate/code_int_mrna_protein_Mg.R")
 source("starterFilesDiscreate/code_int_mrna_protein_Na.R")
 source("starterFilesDiscreate/code_int_mrna_protein_phase.R")
 
-# call mrna subs
-source("starterFilesDiscreate/code_mrna_carbon.R")
-source("starterFilesDiscreate/code_mrna_phase.R")
-source("starterFilesDiscreate/code_mrna_Mg.R")
-source("starterFilesDiscreate/code_mrna_Na.R")
-
-# call for protein subs
-source("starterFilesDiscreate/code_protein_carbon.R")
-source("starterFilesDiscreate/code_protein_phase.R")
-source("starterFilesDiscreate/code_protein_Mg.R")
-source("starterFilesDiscreate/code_protein_Na.R")
 
 # call mrna expo
 source("starterFilesDiscreate/code_mrna_exp_carbon.R")
