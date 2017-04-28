@@ -278,7 +278,7 @@ print(fig_multi_violin)
 
 # Save figure
 cowplot::save_plot(filename = "../b_figures/clustering_all_violin.jpeg", 
-                   plot = fig_multi_violin, ncol = 2, nrow = 3)
+                   plot = fig_multi_violin, ncol = 2, nrow = 2)
 
 
 fig_multi_line<-ggplot(result_List_tidy, aes(x=analyzeName, y=meanPerformance_test, group=model, colour=model))+
@@ -293,3 +293,165 @@ print(fig_multi_line)
 ###*****************************
 
 
+# 
+# ###*****************************
+# # Normalization for F1 Scores
+# 
+# # Meta MRNA
+# ###*****************************
+# # Parameters
+# analyzeName="mRNA"
+# pick_data="mrna"
+# growthPhase="ExpAllPhase"
+# testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase")
+# ndivisionCost=55
+# ndivisionGamma=31
+# numRepeatsFor_TestTrainSubset_Choice=60
+# doNotSave=0 # save the square table figures. 1 means DO NOT save
+# costFunction="F1_final"
+# 
+# testConditionsCombined=paste0(testConditions,collapse = "_")
+# ###*****************************
+# 
+# 
+# ###*****************************
+# # read the list to find file name
+# timeStampFile<-read.csv(file = paste0("../b_results/","parametersModelFitMetafile",".csv")) #import file
+# timeStampFile %>%
+#   dplyr::filter(pick_data==get("pick_data")) %>%
+#   dplyr::filter(growthPhase_names==get("growthPhase")) %>%
+#   dplyr::filter(numRepeatsFor_TestTrainSubset_Choice==get("numRepeatsFor_TestTrainSubset_Choice")) %>%
+#   dplyr::filter(ndivisionCost==get("ndivisionCost")) %>%
+#   dplyr::filter(ndivisionGamma==get("ndivisionGamma")) %>%
+#   dplyr::filter(testConditions==get("testConditionsCombined")) %>%
+#   dplyr::filter(costFunction==get("costFunction"))->chosenDataSetInfo
+# 
+# 
+# 
+# if(nrow(chosenDataSetInfo)!=1){stop("one than one file selected")}
+# 
+# fileName=as.vector(chosenDataSetInfo$fileName)
+# load(file = paste0("../b_results/",fileName,".RDA"))
+# inputMetaDf_mRNA = inputMetaDf
+# ###*****************************
+# 
+# # meta Protein
+# ###*****************************
+# # Parameters
+# analyzeName="protein"
+# pick_data="protein"
+# growthPhase="ExpAllPhase"
+# testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase")
+# ndivisionCost=55
+# ndivisionGamma=31
+# numRepeatsFor_TestTrainSubset_Choice=60
+# mtrylistRF=paste(seq(1,7),collapse = "_")
+# doNotSave=0 # save the square table figures. 1 means DO NOT save
+# costFunction="F1_final"
+# 
+# testConditionsCombined=paste0(testConditions,collapse = "_")
+# ###*****************************
+# 
+# 
+# ###*****************************
+# # read the list to find file name
+# timeStampFile<-read.csv(file = paste0("../b_results/","parametersModelFitMetafile",".csv")) #import file
+# timeStampFile %>%
+#   dplyr::filter(pick_data==get("pick_data")) %>%
+#   dplyr::filter(growthPhase_names==get("growthPhase")) %>%
+#   dplyr::filter(numRepeatsFor_TestTrainSubset_Choice==get("numRepeatsFor_TestTrainSubset_Choice")) %>%
+#   dplyr::filter(ndivisionCost==get("ndivisionCost")) %>%
+#   dplyr::filter(ndivisionGamma==get("ndivisionGamma")) %>%
+#   dplyr::filter(testConditions==get("testConditionsCombined"))%>%
+#   dplyr::filter(costFunction==get("costFunction"))->chosenDataSetInfo
+# 
+# 
+# if(nrow(chosenDataSetInfo)!=1){stop("one than one file selected")}
+# 
+# fileName=as.vector(chosenDataSetInfo$fileName)
+# load(file = paste0("../b_results/",fileName,".RDA"))
+# inputMetaDf_protein = inputMetaDf
+# ###*****************************
+# 
+# 
+# ###*****************************
+# inputMetaDf_mRNA %>%
+#   dplyr::group_by(carbonSource)%>%
+#   dplyr::summarize(NumCarbonSource=n())->inputMetaDf_mRNA_carbon
+# 
+# inputMetaDf_mRNA %>%
+#   dplyr::group_by(growthPhase)%>%
+#   dplyr::summarize(NumPhaseSource=n())->inputMetaDf_mRNA_phase
+# 
+# inputMetaDf_mRNA %>%
+#   dplyr::group_by(Mg_mM_Levels)%>%
+#   dplyr::summarize(NumMgSource=n())->inputMetaDf_mRNA_Mg
+# 
+# inputMetaDf_mRNA %>%
+#   dplyr::group_by(Na_mM_Levels)%>%
+#   dplyr::summarize(NumNaSource=n())->inputMetaDf_mRNA_Na
+# ###*****************************
+# 
+# 
+# ###*****************************
+# inputMetaDf_protein %>%
+#   dplyr::group_by(carbonSource)%>%
+#   dplyr::summarize(NumCarbonSource=n())->inputMetaDf_protein_carbon
+# 
+# inputMetaDf_protein %>%
+#   dplyr::group_by(growthPhase)%>%
+#   dplyr::summarize(NumPhaseSource=n())->inputMetaDf_protein_phase
+# 
+# inputMetaDf_protein %>%
+#   dplyr::group_by(Mg_mM_Levels)%>%
+#   dplyr::summarize(NumMgSource=n())->inputMetaDf_protein_Mg
+# 
+# inputMetaDf_protein %>%
+#   dplyr::group_by(Na_mM_Levels)%>%
+#   dplyr::summarize(NumNaSource=n())->inputMetaDf_protein_Na
+# ###*****************************
+# 
+# 
+# 
+# 
+# randomF1Run<-function(nbins, loop, input)
+# {
+#   
+#   numCut=nrow(input)-1
+#   F1List=seq(from=0, to=1, length.out=nbins+1)
+#   histVec=rep(0,nbins)
+#   
+#   for(counter01 in 1:loop)
+#   {
+#     confusionMatrix=matrix(nrow=nrow(input),ncol=nrow(input))
+#     for(counter02 in 1: nrow(input))
+#     {
+#       cutPoints = sort(runif(numCut))
+#       row_i=diff(c(0,cutPoints,1))
+#       row_i_weight = input[[counter02,2]]*row_i
+#       confusionMatrix[counter02,]=row_i_weight
+#     }
+#     
+#     cm_diagonal=diag(confusionMatrix)
+#     cm_rowSums=rowSums(confusionMatrix)
+#     cm_colSums=colSums(confusionMatrix)
+#     
+#     precision=cm_diagonal/cm_rowSums
+#     recall=cm_diagonal/cm_colSums
+#     F1=2*precision*recall/(precision+recall)
+#     macro_F1=mean(F1)
+#     intervalNo=findInterval(x = macro_F1, vec = F1List)
+# 
+#     histVec[intervalNo] = histVec[intervalNo] + 1
+#   }
+#   return(histVec)
+# }
+# 
+# nbin=200
+# histVec=randomF1Run(nbin, 1000000, inputMetaDf_mRNA_carbon)
+# x_axis=seq(from=1/nbin,to=1,by=1/nbin)-(1/2*1/nbin)
+# plot(x=x_axis, y=histVec, xlim=c(0,1))
+# q<-data.frame(x=x_axis,y=histVec)
+# q %>% dplyr::mutate(prob=y/sum(y))
+# 
+# 

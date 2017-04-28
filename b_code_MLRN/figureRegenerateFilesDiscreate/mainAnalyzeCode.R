@@ -652,11 +652,7 @@ if(!doNotSave==1)
        file = paste0("../b_figures/","ColorLegend_",analyzeName,".Rda"))
   
   # Save correlation between sample number and end result
-  cowplot::save_plot(fig_correlation,
-                     filename = paste0("../b_figures/","fig_correlation_",analyzeName,".pdf"),
-                     base_aspect_ratio=1.333, base_height = 6,
-                     units = "in", useDingbats=FALSE, limitsize=FALSE,
-                     ncol = 1.4, nrow=1.2)
+  save( list = c("fig_correlation"), file = paste0("../b_figures/","fig_correlation_",analyzeName,".RDA"))
   ###*****************************
 }
 ###*****************************

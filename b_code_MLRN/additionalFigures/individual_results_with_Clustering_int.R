@@ -287,13 +287,18 @@ cowplot::save_plot(filename = "../b_figures/clustering_intersection_violin.jpeg"
 
 fig_multi_line<-ggplot(result_List_tidy, aes(x=analyzeName, y=meanPerformance_test, group=model, colour=model))+
   facet_grid(.~testFor)+
-  geom_point()+
+  geom_point(size=3)+
   geom_line()+
   theme_bw()+
-  labs(title = "All conditions") + xlab("Model") + ylab("F1 performance on test data")+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  labs(title = "All conditions") + xlab("Model") + ylab("Mean F1 performance on test data")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = .5),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank())
 
 print(fig_multi_line)
+
+cowplot::save_plot(filename = "../b_figures/clustering_intersection_line.jpeg", 
+                   plot = fig_multi_line, ncol = 2, nrow = 1.5)
 ###*****************************
 
 
