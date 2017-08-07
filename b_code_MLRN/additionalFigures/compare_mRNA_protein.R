@@ -67,8 +67,9 @@ fig01<-ggplot(winnerModels, aes(x=model, y=performance_test, group=model))+
   facet_grid(.~analyzeName)+
   geom_violin(aes(fill=model, color=model))+
   geom_point(aes(x=model, y=meanPerformance_test))+
-  theme_bw()+
-  labs(title = "All conditions") + xlab("Model") + ylab("F1 performance on test data")
+  theme_bw(base_size=16)+
+  #labs(title = "All conditions") + 
+  xlab("Model") + ylab("Multi conditional F1 score")
 
 print(fig01)
 ###*****************************
@@ -76,9 +77,9 @@ print(fig01)
 
 ###*****************************
 # Save figure
-cowplot::save_plot(filename = "../b_figures/compare_mRNA_protein_models.jpeg", 
-                   plot = fig01, ncol = 2, nrow = 2)
-cowplot::save_plot(filename = "../b_figures/compare_mRNA_protein_models_ppt.jpeg", 
+cowplot::save_plot(filename = "../b_figures/compare_mRNA_protein_models.pdf", 
+                   plot = fig01, ncol = 2, nrow = 1.3)
+cowplot::save_plot(filename = "../b_figures/compare_mRNA_protein_models_ppt.pdf", 
                    plot = fig01, ncol = 2, nrow = 1.4)
 ###*****************************
 

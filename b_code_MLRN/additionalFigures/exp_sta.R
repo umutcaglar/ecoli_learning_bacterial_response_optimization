@@ -81,10 +81,10 @@ winnerModels%>%
 # generate the increase in success figure
 fig01<-ggplot(winnerModelsSummary, aes(x=phase, y=meanPerformance_test, group=model, colour=model))+
   facet_grid(. ~ pick_data)+
-  xlab("Phase")+ ylab("Mean F1 performance on test data")+
-  geom_point(aes(colour=model), size=1.5)+
-  geom_line(size=1)+
-  theme_bw()
+  xlab("Growth Phase")+ ylab("Multi conditional F1 scorea")+
+  geom_point(aes(colour=model), size=2, alpha=0.8)+
+  geom_line(size=1.5, alpha=0.8)+
+  theme_bw(base_size=16)
 
 print(fig01)
 ###*****************************
@@ -92,9 +92,9 @@ print(fig01)
 
 ###*****************************
 # Save figure
-cowplot::save_plot(filename = "../b_figures/changePerformanceExpSta_testAll.jpeg", 
-                   plot = fig01, ncol = 1, nrow = 1.2)
-cowplot::save_plot(filename = "../b_figures/changePerformanceExpSta_testAll_ppt.jpeg", 
+cowplot::save_plot(filename = "../b_figures/changePerformanceExpSta_testAll.pdf", 
+                   plot = fig01, ncol = 2, nrow = 1.3)
+cowplot::save_plot(filename = "../b_figures/changePerformanceExpSta_testAll_ppt.pdf", 
                    plot = fig01, ncol = 2, nrow = 1.4)
 ###*****************************
 
