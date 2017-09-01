@@ -78,6 +78,8 @@ vignettes/*.pdf
 
 # Folder ignore
 ./outOfHouseData/*.*
+./outOfHouseData/
+outOfHouseData/
 
 # Visio autosave temporary files
 *.~vsd*
