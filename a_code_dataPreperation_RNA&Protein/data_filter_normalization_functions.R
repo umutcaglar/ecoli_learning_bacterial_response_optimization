@@ -1003,6 +1003,7 @@ sizefactors_deseq<-function(dataInput=mainData_internal, deSeqSfChoice)
   
   if(deSeqSfChoice=="p1Sf")
   {
+    browser()
     # generate DeSeq2 P1 object from data matrix with trivial design formula
     deseq_DataObj_p1 <- DESeqDataSetFromMatrix(countData = rawData_matrix+1, 
                                                colData = metaData, 

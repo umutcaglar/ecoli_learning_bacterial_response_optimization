@@ -17,10 +17,10 @@ source("pipeline/machineLearning_subCode_initDfprep.R")
 # --MAIN LOOP-- do the parallel processing
 print(paste0("Number of pararllel workers: ", getDoParWorkers())) 
 
-#parallel_Result=list() # errer tracking
-#for(counter01 in 1:numRepeatsFor_TestTrainSubset_Choice)
+parallel_Result=list() # errer tracking
+for(counter01 in 1:numRepeatsFor_TestTrainSubset_Choice)
 
-parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %dopar%
+# parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %dopar%
 {
   print(paste0("counter01 :",counter01))
   # Find out data sets that will go into machine learning algorithm
@@ -183,6 +183,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
       #             counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
       costValue=linearTuneResults$costList[counter03]
       
+      browser()
       modelSVM_tune_linear<-e1071::svm(data = trainDataFrame,
                                        conditionInvestigated~.,
                                        type = type_svmChoice,

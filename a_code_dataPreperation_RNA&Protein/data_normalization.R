@@ -43,7 +43,7 @@ source("../a_code_dataPreperation_RNA&Protein/data_filter_normalization_function
 saveFiles=TRUE
 runDeSeqForDifExp=FALSE
 # The data filtering function that controls sub functions.
-mainData=filter_data(dataType = "int_mrna_protein", 
+mainData=filter_data(dataType = "protein", 
                      # can be "rna", "mrna", "protein", "protein_wo_NA", 
                      # "int_mrna_protein", "int_mrna", "int_protein"
                      badDataSet = "set00", # can be "set00",set01","set02", "set03"
@@ -56,7 +56,7 @@ mainData=filter_data(dataType = "int_mrna_protein",
                                            "experiment"),
                      # referenceLevels can be a vector like
                      # c("exponential", "baseMg", "baseNa", "glucose", "glucose_time_course")
-                     referenceLevels=c("stationary",
+                     referenceLevels=c("exponential",
                                        "baseMg", 
                                        "baseNa", 
                                        "glucose", 
@@ -66,8 +66,8 @@ mainData=filter_data(dataType = "int_mrna_protein",
                      MgLevelVector = c("allMg"), # can be "lowMg","baseMg","highMg" // "allMg"
                      NaLevelVector = c("allNa"), # can be "baseNa","highNa" // "allNa"
                      # can be "exponential","stationary","late_stationary" // "allPhase"
-                     growthPhaseVector = c("stationary"), 
-                     filterGenes = c("noMatchFilter"), # can be either "noFilter", or any combination of c("meanFilter", "maxFilter", "sdFilter", "noMatchFilter")
+                     growthPhaseVector = c("allPhase"), 
+                     filterGenes = c("noFilter"), # can be either "noFilter", or any combination of c("meanFilter", "maxFilter", "sdFilter", "noMatchFilter")
                      threshold=NA, # the threshold value for "meanFilter", "maxFilter", "sdFilter" can be  c(meanFilter=5,maxFilter=3,sdFilter=7)
                      roundData=TRUE,
                      sumTechnicalReplicates=TRUE,

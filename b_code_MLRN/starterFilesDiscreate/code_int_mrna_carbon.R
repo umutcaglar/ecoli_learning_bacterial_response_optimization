@@ -10,6 +10,12 @@
 ###*****************************
 # INITIAL COMMANDS TO RESET THE SYSTEM
 rm(list = ls())
+###*****************************
+
+
+###*****************************
+# INITIAL COMMANDS TO RESET THE SYSTEM
+rm(list = ls())
 if (is.integer(dev.list())){dev.off()}
 cat("\014")
 seedNo=14159

@@ -29,6 +29,7 @@ require("tidyr")
 # Graphing
 require("ggplot2")
 require("cowplot")
+require("ggrepel")
 require("gtable") # for the "gtable_filter" function to seperately save the legend
 require("grid") # For manipulating ggplot obj
 
@@ -68,13 +69,13 @@ testConditionsCombined=paste0(testConditions,collapse = "_")
 # read the list to find file name
 timeStampFile<-read.csv(file = paste0("../b_results/","parametersModelFitMetafile",".csv")) #import file
 timeStampFile %>%
-  dplyr::filter(pick_data==get("pick_data")) %>%
+  dplyr::filter(pick_data=="protein") %>%
   dplyr::filter(growthPhase_names==get("growthPhase")) %>%
   dplyr::filter(numRepeatsFor_TestTrainSubset_Choice==get("numRepeatsFor_TestTrainSubset_Choice")) %>%
   dplyr::filter(ndivisionCost==get("ndivisionCost")) %>%
   dplyr::filter(ndivisionGamma==get("ndivisionGamma")) %>%
   dplyr::filter(testConditions==get("testConditionsCombined"))%>%
-  dplyr::filter(costFunction==get("costFunction"))->chosenDataSetInfo
+  dplyr::filter(costFunction=="F1_final")->chosenDataSetInfo
 
 
 if(nrow(chosenDataSetInfo)!=1){stop("one than one file selected")}
