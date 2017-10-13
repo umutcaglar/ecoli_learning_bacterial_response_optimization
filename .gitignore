@@ -77,9 +77,9 @@ vignettes/*.pdf
 ~$*.ppt*
 
 # Folder ignore
-./outOfHouseData/SuppFor_Paper1/
-./outOfHouseData/SuppFor_Paper2/
-./outOfHouseData/SuppFor_Paper3/
+outOfHouseData/SuppFor_Paper1/
+outOfHouseData/SuppFor_Paper2/
+outOfHouseData/SuppFor_Paper3/
 
 
 # Visio autosave temporary files
