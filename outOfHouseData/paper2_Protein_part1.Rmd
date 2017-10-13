@@ -1,0 +1,373 @@
+---
+title: "Out of house data part1: prepeare for machine learning"
+author: "Mehmet Umut Caglar"
+date: "9/25/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r initials, include=FALSE}
+###*****************************
+# INITIAL COMMANDS TO RESET THE SYSTEM
+rm(list = ls())
+if (is.integer(dev.list())){dev.off()}
+cat("\014")
+###*****************************
+
+###*****************************
+#Load Libraries
+require("tidyverse")
+require("DESeq2")
+```
+
+## The generation process for out of house data (Part 1/2)
+
+The out of house protein data is taken from:
+Schmidt, Alexander, et al. "The quantitative and condition-dependent 
+Escherichia coli proteome." Nature biotechnology 34.1 (2016): 104.
+
+The data set composes of two distinct sets; dataset 1 and data set2. They also include a combined data set.
+
+```{r Getting the data}
+dataSet1_notClean_notNormalized = read.csv(file = "SuppFor_Paper2/tableS4_PCount.csv")
+dataSet2_notClean_notNormalized = read.csv(file = "SuppFor_Paper2/tableS5_PCount.csv")
+dataSet_comb_notClean_notNormalized = read.csv(file = "SuppFor_Paper2/tableS6_PCount.csv")
+```
+
+Also want to check is combined data is coming from data set 1 and data set 2
+
+```{r Comparing data sets}
+###*****************************
+# Check if combined is coming from 1 and 2
+dataSet_comb_notClean_notNormalized %>%
+  dplyr::filter(Dataset == 1) %>%
+  dplyr::select(Gene, Glucose) %>%
+  dplyr::arrange(Gene) %>%
+  head(.)
+
+dataSet1_notClean_notNormalized %>%
+  dplyr::select(Gene, glucose) %>%
+  dplyr::arrange(Gene) %>%
+  head(.)
+
+dataSet_comb_notClean_notNormalized %>%
+  dplyr::filter(Dataset == 2) %>%
+  dplyr::select(Gene, Glucose) %>%
+  dplyr::arrange(Gene) %>%
+  head(.)
+
+dataSet2_notClean_notNormalized %>%
+  dplyr::select(Gene, Glucose) %>%
+  dplyr::arrange(Gene) %>%
+  head(.)
+```
+it seems;
+the data set 2 and combined data with data set == 2 
+are consistent but,
+the data set 1 and combined data with data set == 1 are NOT consistent 
+
+
+I will go with both dataSet 1 and data set 2
+
+
+
+Now we do not need all the samples in data set 1 & 2; the matching samples are:
+* Glucose (in exponential phase)
+* Glycerol (in exponential phase)
+* Osmotic.stress.glucose (exponential phase glicose with 50 mm NaCl)
+* Stationary.phase.1.day (Glucose in stationary phase)
+* Stationary.phase.3.days (Glucose in late stationary phase)
+
+
+```{r Cleaning data set 1 & 2}
+# Selecting necessary columns for dataSet1
+dataSet1_notClean_notNormalized %>%
+  dplyr::select(gene_name = Gene, 
+                glucose = glucose,
+                glycerol = glycerol,
+                Na_50_stress = X50.mM.NaCl,
+                stationary = stationary.1.day,
+                late_stationary = stationary.3.days)%>%
+  dplyr::filter(gene_name!="")%>% # there are two rows with gene name ""
+  dplyr::arrange(gene_name)-> dataSet1_notNormalized
+
+head(dataSet1_notNormalized)
+
+# Selecting necessary columns for dataSet2
+dataSet2_notClean_notNormalized %>%
+  dplyr::select(gene_name = Gene, 
+                glucose = Glucose,
+                glycerol = Glycerol,
+                Na_50_stress = Osmotic.stress.glucose,
+                stationary = Stationary.phase.1.day,
+                late_stationary = Stationary.phase.3.days)%>%
+  dplyr::filter(gene_name!="")%>% # there are two rows with gene name ""
+  dplyr::arrange(gene_name)-> dataSet2_notNormalized
+
+head(dataSet2_notNormalized)
+```
+
+We need to match what we measure and what those datasets have;
+
+To do this need to update the `gene_name` with `Protein_id`'s (YP_ names) and generate the meta data table. For this we need the protein dictionary
+
+
+```{r Replacing gene names with YP_ names in data set 2 }
+dictionary = read.csv("nameDictionary_RNA&Protein.csv")
+head(dictionary)
+
+# Making changes for dataSet1
+# ***********************************************
+
+# combine dictionary and datatSet1
+dictionary %>%
+  dplyr::select(gene_name, Protein_id) %>%
+  dplyr::left_join(dataSet1_notNormalized, .) -> dataSet1_notNormalized
+
+# get rid of not matching protein IDs
+dataSet1_notNormalized %>% 
+  dplyr::filter(!is.na(Protein_id)) %>%
+  dplyr:: arrange(Protein_id) -> dataSet1_notNormalized
+
+# check for repeated genes
+dataSet1_notNormalized %>% 
+  dplyr::group_by(Protein_id) %>% 
+  dplyr::summarize(n=n()) %>%
+  dplyr::filter(!n==1) %>% 
+  .$Protein_id %>% 
+  as.vector(.)-> repeatedProtId1
+
+
+dataSet1_notNormalized %>% 
+  dplyr::filter(Protein_id %in% repeatedProtId1)
+
+# it seems the data have repeateed proteins; I pick the ones with higher gene read
+
+dataSet1_notNormalized %>%
+  dplyr::mutate(glucose = as.numeric(as.character(glucose)),
+                glycerol = as.numeric(as.character(glycerol)),
+                Na_50_stress = as.numeric(as.character(Na_50_stress)),
+                stationary = as.numeric(as.character(stationary)),
+                late_stationary = as.numeric(as.character(late_stationary)))%>%
+  na.omit(.)%>%
+  dplyr::group_by(Protein_id) %>%
+  dplyr::arrange(desc(glucose)) %>%
+  dplyr::filter(row_number()==1) %>%
+  dplyr::group_by() %>%
+  dplyr::arrange(Protein_id)->dataSet1_notNormalized
+
+# Check if everything is correct
+dataSet1_notNormalized %>%
+  dplyr::filter(gene_name %in% c("rpmE"))
+# ***********************************************
+
+
+# Making changes for dataSet2
+# ***********************************************
+
+# combine dictionary and datatSet2
+dictionary %>%
+  dplyr::select(gene_name, Protein_id) %>%
+  dplyr::left_join(dataSet2_notNormalized, .) -> dataSet2_notNormalized
+
+# get rid of not matching protein IDs
+dataSet2_notNormalized %>% 
+  dplyr::filter(!is.na(Protein_id)) %>%
+  dplyr:: arrange(Protein_id) -> dataSet2_notNormalized
+
+# check for repeated genes
+dataSet2_notNormalized %>% 
+  dplyr::group_by(Protein_id) %>% 
+  dplyr::summarize(n=n()) %>%
+  dplyr::filter(!n==1) %>% 
+  .$Protein_id %>% 
+  as.vector(.)-> repeatedProtId2
+
+dataSet2_notNormalized %>% 
+  dplyr::filter(Protein_id %in% repeatedProtId2)
+
+# it seems the data have repeateed proteins; I pick the ones with higher gene read
+dataSet2_notNormalized %>%
+  dplyr::mutate(glucose = as.numeric(as.character(glucose)),
+                glycerol = as.numeric(as.character(glycerol)),
+                Na_50_stress = as.numeric(as.character(Na_50_stress)),
+                stationary = as.numeric(as.character(stationary)),
+                late_stationary = as.numeric(as.character(late_stationary)))%>%
+  na.omit(.)%>%
+  dplyr::group_by(Protein_id) %>%
+  dplyr::arrange(desc(glucose)) %>%
+  dplyr::filter(row_number()==1) %>%
+  dplyr::group_by() %>%
+  dplyr::arrange(Protein_id)->dataSet2_notNormalized
+
+# Check if everything is correct
+dataSet2_notNormalized %>%
+  dplyr::filter(gene_name %in% c("bioD", "clpB"))
+
+
+head(dataSet2_notNormalized)
+
+summary(dataSet2_notNormalized)
+# ***********************************************
+```
+
+Note: 
+The `dataSet1_notNormalized` composed of only 1592 lines __which is few!!__
+The `dataSet2_notNormalized` composed of only 1722 lines __which is few!!__
+
+
+The next thing is to generate the _meta data_ data frame
+
+with columns
+
+* sampleNum (1:5)
+* dataSet (externalS1: externamS5)
+* experiment (external)
+* carbonSource (glucose vs)
+* growthPhase (exponential, stationary, late_stationary)
+* Mg_mM_Levels (baseMg)
+* Na_mM_Levels (baseNa, highNa)
+* conditionInvestigated (Combination of all others)
+
+and with row names equal to the columns of data matrix. 
+
+```{r generate meta data frame and data matricies , echo=FALSE}
+
+# generate meta data file
+sampleNum = seq(1,5)
+dataSet = c("glucose", "glycerol", "Na_50_stress", "stationary", "late_stationary")
+experiment = rep("external",5)
+carbonSource = c("glucose", "glycerol", "glucose", "glucose", "glucose")
+growthPhase = c("exponential", "exponential", "exponential", "stationary", "late_stationary")
+Mg_mM_Levels = rep("baseMg", 5)
+Na_mM_Levels = c("baseNa", "baseNa", "highNa", "baseNa", "baseNa")
+conditionInvestigated = c("Base Na_Base Mg_Glucose_Exponential","Base Na_BaseMg_Glycerol_Exponential", "High Na_Base Mg_Glucose_Exponential", "Base Na_Base Mg_Glucose_Stationary", "Base Na_Base Mg_Glucose_Late-Stationary")
+
+meta_data = data.frame(sampleNum, 
+                       dataSet, 
+                       experiment, 
+                       carbonSource, 
+                       growthPhase,
+                       Mg_mM_Levels,
+                       Na_mM_Levels,
+                       conditionInvestigated)
+
+row.names(meta_data) <- c("glucose", 
+                          "glycerol", 
+                          "Na_50_stress", 
+                          "stationary", 
+                          "late_stationary")
+
+print(meta_data)
+
+
+# generate raw data matrix from DF for dataset 2
+dataSet1_notNormalized %>%
+  dplyr::group_by()%>%
+  dplyr::select(glucose, glycerol, Na_50_stress, stationary, late_stationary)%>%
+  as.matrix(.) -> rawData_matrix1
+row.names(rawData_matrix1) <- dataSet1_notNormalized$Protein_id 
+
+head(rawData_matrix1)
+
+
+# generate raw data matrix from DF for dataset 2
+dataSet2_notNormalized %>%
+  dplyr::group_by()%>%
+  dplyr::select(glucose, glycerol, Na_50_stress, stationary, late_stationary)%>%
+  as.matrix(.) -> rawData_matrix2
+row.names(rawData_matrix2) <- dataSet2_notNormalized$Protein_id 
+
+head(rawData_matrix2)
+```
+
+
+Now we need to normalize the data. The process composed of 3 distinct steps:
+
+* rounding the data (data composes of rounded integers, I do not need to do this step)
+* DeSeq2 size factor normalization (with plus 1 size factor trick, to handle with "0" efficiently)
+* DeSeq2 vst normalization
+
+To do all that we need DESeq2 object
+
+```{r apply DESeq Normalization with +1 matrix}
+# For data set 1
+
+# generate DeSeq2 P1 object from data matrix with trivial design formula
+deseq_DataObj1_p1 <- DESeq2::DESeqDataSetFromMatrix(countData = rawData_matrix1+1, 
+                                                    colData = meta_data, 
+                                                    design = ~ 1) 
+# calculate size factors
+deseq_DataObj1_p1 <- DESeq2::estimateSizeFactors(deseq_DataObj1_p1)
+sizeFactors1_p1 <- DESeq2::sizeFactors(deseq_DataObj1_p1)
+
+# generate DeSeq2 object from data matrix with trivial design formula
+deseq_DataObj1 <- DESeq2::DESeqDataSetFromMatrix(countData = rawData_matrix1, 
+                                                 colData = meta_data, 
+                                                 design = ~ 1) 
+
+# Import size factors from P1 object
+sizeFactors(deseq_DataObj1) <- sizeFactors1_p1
+
+
+# For data set 2
+
+# generate DeSeq2 P1 object from data matrix with trivial design formula
+deseq_DataObj2_p1 <- DESeq2::DESeqDataSetFromMatrix(countData = rawData_matrix2+1, 
+                                                    colData = meta_data, 
+                                                    design = ~ 1) 
+# calculate size factors
+deseq_DataObj2_p1 <- DESeq2::estimateSizeFactors(deseq_DataObj2_p1)
+sizeFactors2_p1 <- DESeq2::sizeFactors(deseq_DataObj2_p1)
+
+# generate DeSeq2 object from data matrix with trivial design formula
+deseq_DataObj2 <- DESeq2::DESeqDataSetFromMatrix(countData = rawData_matrix2, 
+                                                 colData = meta_data, 
+                                                 design = ~ 1) 
+
+# Import size factors from P1 object
+sizeFactors(deseq_DataObj2) <- sizeFactors2_p1
+```
+
+
+Than do the vst normalization (something similar to log normalization but reccommended by DESeq2) for datasets 1 & 2
+
+```{r apply variance stabilizing transformation}
+deseq_DataObj1 = DESeq2::varianceStabilizingTransformation(deseq_DataObj1)
+deseq_DataObj2 = DESeq2::varianceStabilizingTransformation(deseq_DataObj2)
+```
+
+Finally Decompose The DESeq2 data into meta data and a raw data frame that can be used by machine learning algorithms.
+
+```{r decompose DESeq2 obj}
+
+# For data set 1
+res_df1_ext<-as.data.frame(assay(deseq_DataObj1))
+metaData1_ext<-as.data.frame(colData(deseq_DataObj1))
+
+head(metaData1_ext)
+head(res_df1_ext)
+
+# For data set 2
+res_df2_ext<-as.data.frame(assay(deseq_DataObj2))
+metaData2_ext<-as.data.frame(colData(deseq_DataObj2))
+
+head(metaData2_ext)
+head(res_df2_ext)
+
+# Save files
+write.csv(x = metaData1_ext, file = "metaData1_ext.csv",row.names = TRUE)
+write.csv(x = res_df1_ext, file = "res_df1_ext.csv",row.names = TRUE)
+
+write.csv(x = metaData2_ext, file = "metaData2_ext.csv",row.names = TRUE)
+write.csv(x = res_df2_ext, file = "res_df2_ext.csv",row.names = TRUE)
+```
+
+Two saved objects describe the cleaned and transformed data that is ready for machine learning applications. 
+
+The machine learning part of the investigation can be found in part2

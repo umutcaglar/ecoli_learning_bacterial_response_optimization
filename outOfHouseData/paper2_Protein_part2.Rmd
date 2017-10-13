@@ -1,0 +1,464 @@
+---
+title: "Out of house data part2: machine learning"
+author: "Mehmet Umut Caglar"
+date: "9/25/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r initials, include=FALSE}
+###*****************************
+# INITIAL COMMANDS TO RESET THE SYSTEM
+rm(list = ls())
+if (is.integer(dev.list())){dev.off()}
+cat("\014")
+###*****************************
+
+###*****************************
+#Load Libraries
+require(tidyverse)
+require(DESeq2)
+require(e1071)
+require(sva)
+###*****************************
+
+###*****************************
+# Source functions
+source("dataPreperation_func_wo_batch.R")
+source("PCA_PCoA_func.R")
+source("batchCorrectionSVA.R")
+###*****************************
+```
+
+## Machine learning for out of house data (Part 2/2)
+
+The out of house protein data is taken from:
+Schmidt, Alexander, et al. "The quantitative and condition-dependent 
+Escherichia coli proteome." Nature biotechnology 34.1 (2016): 104.
+
+the first step is to load the processed external data
+
+```{r Getting the data}
+meta_df1_Test = read.csv(file = "metaData1_ext.csv", row.names = 1)
+testDataFrame1 = read.csv(file = "res_df1_ext.csv", row.names = 1)
+
+meta_df2_Test = read.csv(file = "metaData2_ext.csv", row.names = 1)
+testDataFrame2 = read.csv(file = "res_df2_ext.csv", row.names = 1)
+```
+
+
+The Second step is to load the results of tuning process. We run multiple tuning processes that have distinct labels.
+Here is the details of the tuning process used
+
+
+```{r Tuning Session Parameters  , echo=FALSE}
+# Information about tuning procedure
+
+###*****************************
+# Parameters
+analyzeName = "protein"
+pick_data = "protein"
+growthPhase = "ExpAllPhase"
+testConditions = c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase")
+ndivisionCost = 55
+ndivisionGamma = 31
+numRepeatsFor_TestTrainSubset_Choice = 60
+mtrylistRF = paste(seq(1,7),collapse = "_")
+doNotSave = 0 # save the square table figures. 1 means DO NOT save
+costFunction_ = "F1_final"
+dimensionChoiceValue = 10
+
+testConditionsCombined=paste0(testConditions,collapse = "_")
+###*****************************
+
+
+###*****************************
+# read the list to find file name
+timeStampFile<-read.csv(file = paste0("../b_results/","parametersModelFitMetafile",".csv")) #import file
+timeStampFile %>%
+  dplyr::filter(pick_data == analyzeName) %>%
+  dplyr::filter(growthPhase_names == get("growthPhase")) %>%
+  dplyr::filter(numRepeatsFor_TestTrainSubset_Choice == get("numRepeatsFor_TestTrainSubset_Choice")) %>%
+  dplyr::filter(ndivisionCost == get("ndivisionCost")) %>%
+  dplyr::filter(ndivisionGamma == get("ndivisionGamma")) %>%
+  dplyr::filter(testConditions == get("testConditionsCombined"))%>%
+  dplyr::filter(costFunction == costFunction_) -> chosenDataSetInfo
+
+
+chosenDataSetInfo$dimensionChoiceValue = 10
+print(t(chosenDataSetInfo))
+```
+
+
+```{r Load protein data}
+# Load tuning results
+model_performance = read.csv(file = "../b_results/model_performance_protein.csv")
+
+fig01<-ggplot(model_performance, aes(x=model, y=performance, group=model))+
+  geom_violin(fill="grey80")+
+  geom_point(aes(x=model, y=meanPerformance))+
+  theme_classic()+
+  ylim(0.5,1)
+
+print(fig01)
+```
+
+As can be seen from the figure __SVM with sigmoidal kernel__ seems to be the best model
+
+The best sigmoidal SVM parameters are:
+
+```{r Best parameters}
+model_performance %>%
+  dplyr::filter(model == "radial") %>%
+  dplyr::arrange(desc(performance)) %>%
+  head(.)
+```
+
+So the cost = 3162.2 and gamma = 0.068 with sigmoidal kernel is the choice of parameters
+
+Now we need to load the protein data and train it with those parameters 
+
+```{r Load Protein Data}
+trainDataFrame = read.csv(file = "resDf_protein_trT_set00_StcYtcNasAgrNgrMgh_SYAN_baseMgAllMg_baseNaAllNa_ExpAllPhase_noMatchFilter_p1Sf_vst.csv",header = TRUE,row.names = 1)
+
+load(file = paste0("../b_results/", chosenDataSetInfo$fileName, ".RDA"), verbose = TRUE)
+remove(timeStampVector, parallel_Result)
+
+meta_df_Train = inputMetaDf
+
+meta_df_Train %>% 
+  dplyr::select(dataSet, carbonSource, Mg_mM, Na_mM, growthTime_hr)
+```
+
+Now we need to prepeare train and test datasets
+
+Train data composes of all house data
+Test data is the all external data
+
+
+We will do a 5+1 step procedure
+
+* batch correction?? (may be later)
+* Find the rows with 0 sd in training data, remove them from training and test data
+* Find the missing rows on test data, replace them with the __median__ values of training data
+* Transpose data frames
+* Do PCA (apply the rotation object to test data)
+* Pick the first 10 rows
+
+```{r batch correction}
+# batchCorrDFs=batchCorrectSva(trainDataFrame_ = trainDataFrame,
+#                              meta_df_Train_ = meta_df_Train,
+#                              testDataFrame_ = testDataFrame,
+#                              dataNameDF_ = dataNameDF)
+# 
+# trainDataFrame = batchCorrDFs$trainDataFrame
+# testDataFrame = batchCorrDFs$testDataFrame
+```
+
+```{r Find the rows with 0 sd in training data, remove them from training and test data}
+# 1. remove rows of 0 sd in training data from both training and test data
+zerosdList=which(apply(trainDataFrame,1,sd)==0)
+if(length(zerosdList)!=0){trainDataFrame=trainDataFrame[-zerosdList,]} # get rid of 0 sd data
+if(length(zerosdList)!=0){testDataFrame1=testDataFrame1[-zerosdList,]} # get rid of 0 sd data
+if(length(zerosdList)!=0){testDataFrame2=testDataFrame2[-zerosdList,]} # get rid of 0 sd data
+```
+
+```{r Find the missing rows on test data, replace them with the median values of training data or remove them from training}
+# 2.a.dataSet1 Find the missing rows on test data, replace them with the median values of training data
+theMedianList1 = setdiff(row.names(trainDataFrame), row.names(testDataFrame1))
+trainDataFrame %>%
+  tibble::rownames_to_column(var = "rowNames") %>%
+  dplyr::filter(rowNames %in% theMedianList1) %>%
+  tibble::column_to_rownames(var = "rowNames") -> trainDataFrame1_missing
+
+missing_medians1 <-apply(trainDataFrame1_missing, 1, median) # row medians
+
+foo <- data.frame(glucose = missing_medians1, 
+                  glycerol = missing_medians1,
+                  Na_50_stress = missing_medians1,
+                  stationary = missing_medians1,
+                  late_stationary = missing_medians1)
+row.names(foo) <- names(missing_medians1)
+
+rbind(testDataFrame1, foo) %>%
+  tibble::rownames_to_column(var = "rowNames") %>%
+  dplyr::arrange(rowNames) %>%
+  tibble::column_to_rownames(var = "rowNames") -> testDataFrame1_expanded
+
+
+# 2.b.dataSet1 Alternative way. Get rid of the missing data in training set (The other way is higly biased)
+theMedianList1 = setdiff(row.names(trainDataFrame), row.names(testDataFrame1))
+trainDataFrame %>%
+  tibble::rownames_to_column(var = "rowNames") %>%
+  dplyr::filter(!rowNames %in% theMedianList1) %>%
+  tibble::column_to_rownames(var = "rowNames") -> trainDataFrame1_shrunken
+# this alternative removes samples from tarining which might prevent bias
+
+
+
+
+
+# 2.a.dataSet2 Find the missing rows on test data, replace them with the median values of training data
+theMedianList2 = setdiff(row.names(trainDataFrame), row.names(testDataFrame2))
+trainDataFrame %>%
+  tibble::rownames_to_column(var = "rowNames") %>%
+  dplyr::filter(rowNames %in% theMedianList2) %>%
+  tibble::column_to_rownames(var = "rowNames") -> trainDataFrame2_missing
+
+missing_medians2 <-apply(trainDataFrame2_missing, 1, median) # row medians
+
+foo <- data.frame(glucose = missing_medians2, 
+                  glycerol = missing_medians2,
+                  Na_50_stress = missing_medians2,
+                  stationary = missing_medians2,
+                  late_stationary = missing_medians2)
+row.names(foo) <- names(missing_medians2)
+
+rbind(testDataFrame2, foo) %>%
+  tibble::rownames_to_column(var = "rowNames") %>%
+  dplyr::arrange(rowNames) %>%
+  tibble::column_to_rownames(var = "rowNames") -> testDataFrame2_expanded
+
+
+# 2.b.dataSet1 Alternative way. Get rid of the missing data in training set (The other way is higly biased)
+theMedianList2 = setdiff(row.names(trainDataFrame), row.names(testDataFrame2))
+trainDataFrame %>%
+  tibble::rownames_to_column(var = "rowNames") %>%
+  dplyr::filter(!rowNames %in% theMedianList2) %>%
+  tibble::column_to_rownames(var = "rowNames") -> trainDataFrame2_shrunken
+# this alternative removes samples from tarining which might prevent bias
+```
+
+```{r Transpose data frames}
+# 3.a.dataset1 Transpose Data Frames (expand)
+trainDataFrame1 <- t(trainDataFrame)
+testDataFrame1_expanded <- t(testDataFrame1_expanded)
+
+# 3.b.dataset1 Transpose Data Frames (shrink)
+trainDataFrame1_shrunken <- t(trainDataFrame1_shrunken)
+testDataFrame1 <- t(testDataFrame1)
+
+
+# 3.a.dataset2 Transpose Data Frames (expand)
+trainDataFrame2 <- t(trainDataFrame)
+testDataFrame2_expanded <- t(testDataFrame2_expanded)
+
+# 3.b.dataset2 Transpose Data Frames (shrink)
+trainDataFrame2_shrunken <- t(trainDataFrame2_shrunken)
+testDataFrame2 <- t(testDataFrame2)
+```
+
+```{r PCA}
+# 4.a.dataset1 PCA (expand)
+mapped_DF_Objs1_expanded=pca_analyze(train_set = trainDataFrame1, 
+                                     train_condition = meta_df_Train, 
+                                     test_set = testDataFrame1_expanded, 
+                                     test_condition = meta_df1_Test)
+
+mapped_train_DF1 <- mapped_DF_Objs1_expanded$train_set_PCs_comb
+mapped_expanded_test_DF1 <- mapped_DF_Objs1_expanded$test_set_PCs_comb
+
+# 4.b.dataset1 PCA (shrink)
+
+mapped_DF_Objs1_shrunken=pca_analyze(train_set = trainDataFrame1_shrunken, 
+                                     train_condition = meta_df_Train, 
+                                     test_set = testDataFrame1, 
+                                     test_condition = meta_df1_Test)
+
+mapped_shrunken_train_DF1 <- mapped_DF_Objs1_shrunken$train_set_PCs_comb
+mapped_test_DF1 <- mapped_DF_Objs1_shrunken$test_set_PCs_comb
+
+
+
+
+
+
+# 4.a.dataset2 PCA (expand)
+mapped_DF_Objs2_expanded=pca_analyze(train_set = trainDataFrame2, 
+                                     train_condition = meta_df_Train, 
+                                     test_set = testDataFrame2_expanded, 
+                                     test_condition = meta_df2_Test)
+
+mapped_train_DF2 <- mapped_DF_Objs2_expanded$train_set_PCs_comb
+mapped_expanded_test_DF2 <- mapped_DF_Objs2_expanded$test_set_PCs_comb
+
+# 4.b.dataset2 PCA (shrink)
+
+mapped_DF_Objs2_shrunken=pca_analyze(train_set = trainDataFrame2_shrunken, 
+                                     train_condition = meta_df_Train, 
+                                     test_set = testDataFrame2, 
+                                     test_condition = meta_df2_Test)
+
+mapped_shrunken_train_DF2 <- mapped_DF_Objs2_shrunken$train_set_PCs_comb
+mapped_test_DF2 <- mapped_DF_Objs2_shrunken$test_set_PCs_comb
+```
+
+```{r Pick the first few axis / dimension reduction}
+###*****************************
+# 5. Pick the first dimensions
+# Pick # of dimensions that needs to go into machine learning algorithm
+dimensionChoice=dimensionChoiceValue
+
+# generate the list of dimensions that will be selected from df by using dplyr::select
+selectList = c("conditionInvestigated",paste0("Axis.",seq(1,dimensionChoice)))
+selectList1 = intersect(selectList, colnames(mapped_train_DF1))
+selectList2 = intersect(selectList, colnames(mapped_train_DF2))
+
+# selection of wanted dimensions with dplyr::select for "mapped_train_DF" and "mapped_expanded_test_DF" for expended datasets
+mapped_train_DF1 %>% 
+  tibble::column_to_rownames(var = "dataSet")%>%
+  dplyr::select_(.dots = selectList1)->dim_reduced_train_DF1 
+
+mapped_train_DF2 %>% 
+  tibble::column_to_rownames(var = "dataSet")%>%
+  dplyr::select_(.dots = selectList2)->dim_reduced_train_DF2 
+
+mapped_expanded_test_DF1 %>% 
+  tibble::column_to_rownames(var = "dataSet")%>%
+  dplyr::select_(.dots = selectList1) %>%
+  dplyr::group_by()%>%
+  dplyr::select(-conditionInvestigated)->dim_reduced_expanded_test_DF1
+
+mapped_expanded_test_DF2 %>% 
+  tibble::column_to_rownames(var = "dataSet")%>%
+  dplyr::select_(.dots = selectList2) %>%
+  dplyr::group_by()%>%
+  dplyr::select(-conditionInvestigated)->dim_reduced_expanded_test_DF2
+
+print(head(dim_reduced_train_DF1))
+print(head(dim_reduced_expanded_test_DF1))
+print(head(dim_reduced_train_DF2))
+print(head(dim_reduced_expanded_test_DF2))
+
+# selection of wanted dimensions with dplyr::select for "mapped_shrunken_train_DF" and "mapped_test_DF" for shrank data sets
+mapped_shrunken_train_DF1 %>% 
+  tibble::column_to_rownames(var = "dataSet")%>%
+  dplyr::select_(.dots = selectList1)->dim_reduced_shrunken_train_DF1
+
+mapped_shrunken_train_DF2 %>% 
+  tibble::column_to_rownames(var = "dataSet")%>%
+  dplyr::select_(.dots = selectList2)->dim_reduced_shrunken_train_DF2
+
+mapped_test_DF1 %>% 
+  tibble::column_to_rownames(var = "dataSet")%>%
+  dplyr::select_(.dots = selectList1) %>%
+  dplyr::group_by()%>%
+  dplyr::select(-conditionInvestigated)->dim_reduced_test_DF1
+
+mapped_test_DF2 %>% 
+  tibble::column_to_rownames(var = "dataSet")%>%
+  dplyr::select_(.dots = selectList2) %>%
+  dplyr::group_by()%>%
+  dplyr::select(-conditionInvestigated)->dim_reduced_test_DF2
+
+
+# Print the results
+print(head(dim_reduced_shrunken_train_DF1))
+print(head(dim_reduced_test_DF1))
+
+print(head(dim_reduced_shrunken_train_DF2))
+print(head(dim_reduced_test_DF2))
+###*****************************
+```
+
+
+The last step is to calculate the weight vectors; they are basically inversely proportional to the umber of samples for each category.
+```{r Calculate weight vector}
+
+# Dataset1
+meta_df_Train %>%
+  dplyr::group_by(conditionInvestigated) %>%
+  dplyr::summarize(numSample = n()) %>%
+  dplyr::mutate(invNumSample = 1/numSample) %>%
+  dplyr::mutate(weight = invNumSample / sum(invNumSample)) -> classWeights
+
+weightVector <- classWeights$weight
+names(weightVector) <- classWeights$conditionInvestigated
+
+
+# Print the results
+print(head(classWeights))
+```
+
+
+## Learn the model
+
+Its time to train the model
+
+```{r Train The Model & Make predictions with it}
+
+# Learn from Dataset 1 with expanded data
+modelSVM_expanded_sigmoid1 <- e1071::svm(data = dim_reduced_train_DF1 ,
+                                         conditionInvestigated~.,
+                                         type = "C-classification",
+                                         kernel = "sigmoid",
+                                         class.weights = weightVector,
+                                         cost=3162.2777,
+                                         gamma = 0.06812921)
+
+# Learn from Dataset 2 with expanded data
+modelSVM_expanded_sigmoid2 <- e1071::svm(data = dim_reduced_train_DF2 ,
+                                         conditionInvestigated~.,
+                                         type = "C-classification",
+                                         kernel = "sigmoid",
+                                         class.weights = weightVector,
+                                         cost=3162.2777,
+                                         gamma = 0.06812921)
+
+# make prediction with the model (Dataset 1 expanded data)
+modelSVM_expanded_sigmoid1 %>%
+  predict(.,dim_reduced_expanded_test_DF1) %>%
+  data.frame(predictedValue = .)
+
+# make prediction with the model (Dataset 2 expanded data)
+modelSVM_expanded_sigmoid2 %>%
+  predict(.,dim_reduced_expanded_test_DF2) %>%
+  data.frame(predictedValue = .)
+
+
+
+
+
+# Learn from Dataset 1 with shrunken data
+modelSVM_shrunken_sigmoid1 <- e1071::svm(data = dim_reduced_shrunken_train_DF1,
+                                         conditionInvestigated~.,
+                                         type = "C-classification",
+                                         kernel = "sigmoid",
+                                         class.weights = weightVector,
+                                         cost=120,
+                                         gamma = 1)
+
+# Learn from Dataset 2 with shrunken data
+modelSVM_shrunken_sigmoid2 <- e1071::svm(data = dim_reduced_shrunken_train_DF2,
+                                         conditionInvestigated~.,
+                                         type = "C-classification",
+                                         kernel = "sigmoid",
+                                         class.weights = weightVector,
+                                         cost=150,
+                                         gamma = 10)
+
+# make prediction with the model (Dataset1 shrunken data)
+modelSVM_shrunken_sigmoid1 %>%
+  predict(.,dim_reduced_test_DF1) %>%
+  data.frame(predictedValue = .)
+
+
+# make prediction with the model (Dataset2 shrunken data)
+modelSVM_shrunken_sigmoid2 %>%
+  predict(.,dim_reduced_test_DF2) %>%
+  data.frame(predictedValue = .)
+```
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,6 @@
+"","sampleNum","dataSet","experiment","carbonSource","growthPhase","Mg_mM_Levels","Na_mM_Levels","conditionInvestigated","sizeFactor"
+"glucose",1,"glucose","external","glucose","exponential","baseMg","baseNa","Base Na_Base Mg_Glucose_Exponential",1.88142776396966
+"glycerol",2,"glycerol","external","glycerol","exponential","baseMg","baseNa","Base Na_BaseMg_Glycerol_Exponential",1.32693958628522
+"Na_50_stress",3,"Na_50_stress","external","glucose","exponential","baseMg","highNa","High Na_Base Mg_Glucose_Exponential",1.50677634627054
+"stationary",4,"stationary","external","glucose","stationary","baseMg","baseNa","Base Na_Base Mg_Glucose_Stationary",0.497044960984209
+"late_stationary",5,"late_stationary","external","glucose","late_stationary","baseMg","baseNa","Base Na_Base Mg_Glucose_Late-Stationary",0.53436711774015

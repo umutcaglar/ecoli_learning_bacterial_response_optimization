@@ -1,0 +1,9 @@
+rawData_matrix:
+
+is a matrix with row names are gene names with (YP_) col names are sample names like "MURI_016"
+
+metaData is a data frame
+with rowNames is equal to the col names of raw data matrix
+
+c("Base Na_Base Mg_Glucose_Exponential","Base Na_BaseMg_Glycerol_Exponential", "High Na_Base Mg_Glucose_Exponential", "Base Na_Base Mg_Glucose_Stationary", "Base Na_Base Mg_Glucose_Late-Stationary")
+
