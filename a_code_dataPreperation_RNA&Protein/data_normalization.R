@@ -72,7 +72,7 @@ mainData=filter_data(dataType = "protein",
                      roundData=TRUE,
                      sumTechnicalReplicates=TRUE,
                      deSeqSfChoice="p1Sf", # can be "regSf", "p1Sf", "noSf"
-                     normalizationMethodChoice = "vst") # can be "vst", "rlog", "log10", "noNorm"
+                     normalizationMethodChoice = "noNorm") # can be "vst", "rlog", "log10", "noNorm"
 ###*****************************
 
 

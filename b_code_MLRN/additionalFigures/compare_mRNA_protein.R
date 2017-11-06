@@ -122,8 +122,13 @@ assign(x = "fig_correlation_mRNA", value = fig_correlation)
 load(file = "../b_figures/fig_correlation_protein.RDA")
 assign(x = "fig_correlation_protein", value = fig_correlation)
 
-combinedCorrelation = cowplot::plot_grid(fig_correlation_mRNA,fig_correlation_mRNA, 
+combinedCorrelation = cowplot::plot_grid(fig_correlation_mRNA,fig_correlation_protein, 
                                          ncol = 1,nrow=2,scale = .95,labels = c("A","B"))
+
+cowplot::save_plot(filename = "../b_figures/mRNA_correlation.jpeg",
+                   plot = fig_correlation_mRNA, ncol = 1.3, nrow = 1)
+cowplot::save_plot(filename = "../b_figures/protein_correlation.jpeg",
+                   plot = fig_correlation_protein, ncol = 1.3, nrow = 1)
 
 cowplot::save_plot(filename = "../b_figures/combined_mRNA_protein_correlation.jpeg",
                    plot = combinedCorrelation, ncol = 2*1.3, nrow = 2.8*1.3)

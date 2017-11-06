@@ -51,15 +51,15 @@ sourceCpp("pipeline/f1ScoreFunction.cpp")
 ###*****************************
 # Parameters
 analyzeName="protein"
-pick_data="protein"
+pick_data_="protein"
 growthPhase="ExpAllPhase"
 testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase")
-ndivisionCost=55
-ndivisionGamma=31
-numRepeatsFor_TestTrainSubset_Choice=60
+ndivisionCost_=55
+ndivisionGamma_=31
+numRepeatsFor_TestTrainSubset_Choice_=60
 mtrylistRF=paste(seq(1,7),collapse = "_")
 doNotSave=0 # save the square table figures. 1 means DO NOT save
-costFunction="F1_final"
+costFunction_="F1_final"
 
 testConditionsCombined=paste0(testConditions,collapse = "_")
 ###*****************************
@@ -69,13 +69,13 @@ testConditionsCombined=paste0(testConditions,collapse = "_")
 # read the list to find file name
 timeStampFile<-read.csv(file = paste0("../b_results/","parametersModelFitMetafile",".csv")) #import file
 timeStampFile %>%
-  dplyr::filter(pick_data=="protein") %>%
+  dplyr::filter(pick_data==get("pick_data_")) %>%
   dplyr::filter(growthPhase_names==get("growthPhase")) %>%
-  dplyr::filter(numRepeatsFor_TestTrainSubset_Choice==get("numRepeatsFor_TestTrainSubset_Choice")) %>%
-  dplyr::filter(ndivisionCost==get("ndivisionCost")) %>%
-  dplyr::filter(ndivisionGamma==get("ndivisionGamma")) %>%
+  dplyr::filter(numRepeatsFor_TestTrainSubset_Choice==get("numRepeatsFor_TestTrainSubset_Choice_")) %>%
+  dplyr::filter(ndivisionCost==get("ndivisionCost_")) %>%
+  dplyr::filter(ndivisionGamma==get("ndivisionGamma_")) %>%
   dplyr::filter(testConditions==get("testConditionsCombined"))%>%
-  dplyr::filter(costFunction=="F1_final")->chosenDataSetInfo
+  dplyr::filter(costFunction==get("costFunction_"))->chosenDataSetInfo
 
 
 if(nrow(chosenDataSetInfo)!=1){stop("one than one file selected")}

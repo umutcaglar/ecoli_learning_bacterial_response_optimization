@@ -101,14 +101,14 @@ for(counter02 in 1: length(analyzeNameList))
   ###*****************************
   # Parameters
   analyzeName=analyzeNameList[counter02]
-  pick_data=pick_dataList[counter02]
+  picked_data=pick_dataList[counter02]
   growthPhase="ExpAllPhase"
   testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase")
-  ndivisionCost=55
-  ndivisionGamma=31
+  ndivisionCost_=55
+  ndivisionGamma_=31
   numRepeatsFor_TestTrainSubset_Choice=60
   doNotSave=0 # save the square table figures. 1 means DO NOT save
-  costFunction="F1_final"
+  costFunction_="F1_final"
   
   testConditionsCombined=paste0(testConditions,collapse = "_")
   ###*****************************
@@ -118,16 +118,16 @@ for(counter02 in 1: length(analyzeNameList))
   # read the list to find file name
   timeStampFile<-read.csv(file = paste0("../b_results/","parametersModelFitMetafile",".csv")) #import file
   timeStampFile %>%
-    dplyr::filter(pick_data==get("pick_data")) %>%
+    dplyr::filter(pick_data==get("picked_data")) %>%
     dplyr::filter(growthPhase_names==get("growthPhase")) %>%
     dplyr::filter(numRepeatsFor_TestTrainSubset_Choice==get("numRepeatsFor_TestTrainSubset_Choice")) %>%
-    dplyr::filter(ndivisionCost==get("ndivisionCost")) %>%
-    dplyr::filter(ndivisionGamma==get("ndivisionGamma")) %>%
+    dplyr::filter(ndivisionCost==get("ndivisionCost_")) %>%
+    dplyr::filter(ndivisionGamma==get("ndivisionGamma_")) %>%
     dplyr::filter(testConditions==get("testConditionsCombined"))%>%
-    dplyr::filter(costFunction==get("costFunction"))->chosenDataSetInfo
+    dplyr::filter(costFunction==get("costFunction_"))->chosenDataSetInfo
   
-  
-  if(nrow(chosenDataSetInfo)!=1){stop("one than one file selected")}
+
+  if(nrow(chosenDataSetInfo)!=1){stop("more than one file selected")}
   
   fileName=as.vector(chosenDataSetInfo$fileName)
   
