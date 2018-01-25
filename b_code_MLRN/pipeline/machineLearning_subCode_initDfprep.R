@@ -40,32 +40,32 @@ Mg_mM_LevelsVector_Short=c("L.Mg","B.Mg","H.Mg")
 Na_mM_LevelsVector_Short=c("B.Na","H.Na")
 
 # Generated vectior lists associated with vectors and short vectors
-vectorList=list(growthPhase=growthPhaseVector,
-                carbonSource=carbonSourceVector,
-                Mg_mM_Levels=Mg_mM_LevelsVector,
-                Na_mM_Levels=Na_mM_LevelsVector)
+vectorList=list(growthPhase = growthPhaseVector,
+                carbonSource = carbonSourceVector,
+                Mg_mM_Levels = Mg_mM_LevelsVector,
+                Na_mM_Levels = Na_mM_LevelsVector)
 
-vectorList_Short=list(growthPhase_Short=growthPhaseVector_Short,
-                      carbonSource_Short=carbonSourceVector_Short,
-                      Mg_mM_Levels_Short=Mg_mM_LevelsVector_Short,
-                      Na_mM_Levels_Short=Na_mM_LevelsVector_Short)
+vectorList_Short=list(growthPhase_Short = growthPhaseVector_Short,
+                      carbonSource_Short = carbonSourceVector_Short,
+                      Mg_mM_Levels_Short = Mg_mM_LevelsVector_Short,
+                      Na_mM_Levels_Short = Na_mM_LevelsVector_Short)
 
 # Put column labels in order 
 condition$growthPhase <- factor(condition$growthPhase, 
-                                levels=growthPhaseVector)
+                                levels = growthPhaseVector)
 condition$carbonSource <- factor(condition$carbonSource, 
-                                 levels=carbonSourceVector)
+                                 levels = carbonSourceVector)
 condition$Mg_mM_Levels <- factor(condition$Mg_mM_Levels, 
-                                 levels=Mg_mM_LevelsVector)
+                                 levels = Mg_mM_LevelsVector)
 condition$Na_mM_Levels <- factor(condition$Na_mM_Levels, 
-                                 levels=Na_mM_LevelsVector)
+                                 levels = Na_mM_LevelsVector)
 
 # Generate updated columns
 condition %>%
-  dplyr::mutate(growthPhase_Short=growthPhase,
-                carbonSource_Short=carbonSource,
-                Mg_mM_Levels_Short=Mg_mM_Levels,
-                Na_mM_Levels_Short=Na_mM_Levels)->condition
+  dplyr::mutate(growthPhase_Short = growthPhase,
+                carbonSource_Short = carbonSource,
+                Mg_mM_Levels_Short = Mg_mM_Levels,
+                Na_mM_Levels_Short = Na_mM_Levels)->condition
 
 
 # Rename Updated columns
@@ -113,7 +113,6 @@ if(length(testConditions)!=1)
   inputMetaDf$conditionInvestigated_Short<-droplevels(inputMetaDf$conditionInvestigated_Short)
 }
 
-
 if(length(testConditions)==1)
 {
   inputMetaDf%>% 
@@ -160,6 +159,7 @@ if(length(testConditions)==1)
     inputMetaDf$conditionInvestigated_Short<-droplevels(inputMetaDf$conditionInvestigated_Short) 
   }
 }
+
 
 factorOrder<-levels(inputMetaDf$conditionInvestigated)
 factorOrder_Short<-levels(inputMetaDf$conditionInvestigated_Short)
@@ -235,7 +235,6 @@ F1ScoreErr<-function(y,prediction)
   F1_err=1-mean(F1, na.rm =T)
   # print(paste0("F1_err: ", F1_err));
   
-  # browser()
   return(F1_err)
 }
 

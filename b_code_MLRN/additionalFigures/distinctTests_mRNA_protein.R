@@ -69,7 +69,7 @@ winnerModels%>%
   tidyr::separate(analyzeName, c("pick_data", "tested_for"), "_")->winnerModels
 
 winnerModels$tested_for <- factor(winnerModels$tested_for,
-                                   levels = c("carbon", "Mg", "Na", "growth"))
+                                   levels = c("carbon", "growth", "Mg", "Na"))
 
 winnerModels$analyzeName <- factor(winnerModels$pick_data,
                                    levels = c("mRNA", "protein"))
@@ -86,7 +86,7 @@ fig01<-ggplot(winnerModels, aes(x=model, y=performance_test, group=model))+
   geom_violin(aes(fill=model, color=model))+
   geom_point(aes(x=model, y=meanPerformance_test))+
   theme_bw(base_size=20)+
-  xlab("Model") + ylab("Multi conditional F1 score")+
+  xlab("Model") + ylab("F1 Performance on Test Data")+
   theme(axis.text.x = element_text(angle=45, hjust=1))
 
 print(fig01)

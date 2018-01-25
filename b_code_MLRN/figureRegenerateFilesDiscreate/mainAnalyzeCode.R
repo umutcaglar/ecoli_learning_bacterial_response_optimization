@@ -483,6 +483,41 @@ fig03<-ggplot(winnerModelResultsSum, aes( y=conditionInvestigated,x= predictedVa
          strip.text = element_text(size = 14),
          legend.position="none")
 
+
+winnerModelResultsSum %>%
+  tidyr::separate(col = predictedValue, into = c("pre1", "pre2", "pre3", "pre4"), 
+                  sep = "_", remove = FALSE)%>%
+  tidyr::separate(col = conditionInvestigated, into = c("cond1", "cond2", "cond3", "cond4"), 
+                  sep = "_", remove = FALSE) %>%
+  dplyr::mutate(test1 = ifelse(test = pre1 == cond1, yes = 1, no = 0),
+                test2 = ifelse(test = pre2 == cond2, yes = 1, no = 0),
+                test3 = ifelse(test = pre3 == cond3, yes = 1, no = 0),
+                test4 = ifelse(test = pre4 == cond4, yes = 1, no = 0)) %>%
+  dplyr::mutate(correct_prediction = test1 + test2 + test3 + test4)-> winnerModelResults_numMistake
+
+winnerModelResults_numMistake %>%
+  dplyr::group_by(correct_prediction) %>%
+  dplyr::summarise(added_percentiles = sum(percentPrediction)) -> winnerModelResults_numMistakeSum
+
+ggplot(winnerModelResults_numMistakeSum, aes(x= correct_prediction, y = added_percentiles))+
+  geom_bar(stat="identity")+
+  scale_x_reverse()+
+  scale_y_continuous(expand = c(0,0), limits = c(0,1000))+
+  xlab("number of correct predictions")+
+  ylab("sum of percentiles")-> fig_error_dist
+
+fig_error_dist
+
+winnerModelResults_numMistake %>% dplyr::filter(correct_prediction == 3) %>% 
+  dplyr::summarize(test1_sum=sum(-(test1-1)*percentPrediction), 
+                   test2_sum=sum(-(test2-1)*percentPrediction), 
+                   test3_sum=sum(-(test3-1)*percentPrediction), 
+                   test4_sum=sum(-(test4-1)*percentPrediction))
+
+browser()
+
+
+
 #fig03<-ggdraw(switch_axis_position(fig03, axis = 'x'))
 
 print(fig03)
@@ -552,7 +587,7 @@ fig06<-ggplot(tidyDF, aes( y=axis2, x=condition))+
   theme(legend.position="bottom",
         legend.key.size= unit(.6,"cm"))
 print(fig06)
-
+browser()
 
 
 # Combine Figures
@@ -641,6 +676,10 @@ if(!doNotSave==1)
                      base_aspect_ratio=1.333, base_height = 6,
                      units = "in", useDingbats=FALSE, limitsize=FALSE,
                      ncol = 1.4, nrow=1.2)
+  
+  # Save bar graphs related with errors
+  cowplot::save_plot(filename = paste0("../b_figures/","fig_corrext_prediction_",analyzeName,".pdf"), 
+                     plot = fig_error_dist, ncol=1, nrow=1, dpi=600)
   
   # Save Figure Object
   fileNameCollapsed=paste(fileName,collapse = "_")

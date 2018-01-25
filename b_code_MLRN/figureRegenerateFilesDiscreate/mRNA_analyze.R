@@ -25,6 +25,7 @@ if(as.vector(Sys.info()["effective_user"]=="umut"))
 # Data tracking
 require("dplyr")
 require("tidyr")
+require("ggrepel")
 
 # Graphing
 require("ggplot2")

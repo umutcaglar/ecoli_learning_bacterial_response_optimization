@@ -55,8 +55,12 @@ winnerModels<-dplyr::bind_rows(winnerModels_int_mrna,
                                winnerModels_int_protein,
                                winnerModels_int_mrna_protein)
 
+winnerModels$analyzeName <- replace_fun(input_vector = winnerModels$analyzeName, 
+                                        initialVal = c("int_mRNA", "int_protein", "int_mRNA_protein"), 
+                                        finalVal = c("int mRNA", "int protein", "int mRNA protein"))
+
 winnerModels$analyzeName <- factor(winnerModels$analyzeName,
-                                   levels = c("int_mRNA", "int_protein", "int_mRNA_protein"))
+                                   levels = c("int mRNA", "int protein", "int mRNA protein"))
 
 winnerModels$model <- factor(winnerModels$model,
                              levels = c("radial", "sigmoid", "linear", "RF"))
@@ -71,7 +75,7 @@ fig01<-ggplot(winnerModels, aes(x=model, y=performance_test, group=model))+
   geom_point(aes(x=model, y=meanPerformance_test))+
   theme_bw(base_size=14)+
   #labs(title = "All conditions") + 
-  xlab("Model") + ylab("Multi conditional F1 score")
+  xlab("Model") + ylab("F1 Performance on Test Data")
 
 print(fig01)
 ###*****************************

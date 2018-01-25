@@ -69,7 +69,7 @@ fig01<-ggplot(winnerModels, aes(x=model, y=performance_test, group=model))+
   geom_point(aes(x=model, y=meanPerformance_test))+
   theme_bw(base_size=16)+
   #labs(title = "All conditions") + 
-  xlab("Model") + ylab("Multi conditional F1 score")
+  xlab("Model") + ylab("F1 Performance on Test Data")
 
 print(fig01)
 ###*****************************
@@ -125,10 +125,12 @@ assign(x = "fig_correlation_protein", value = fig_correlation)
 combinedCorrelation = cowplot::plot_grid(fig_correlation_mRNA,fig_correlation_protein, 
                                          ncol = 1,nrow=2,scale = .95,labels = c("A","B"))
 
+
+scale_val = 1.5
 cowplot::save_plot(filename = "../b_figures/mRNA_correlation.jpeg",
-                   plot = fig_correlation_mRNA, ncol = 1.3, nrow = 1)
+                   plot = fig_correlation_mRNA, ncol = 1.3*scale_val, nrow = 1*scale_val)
 cowplot::save_plot(filename = "../b_figures/protein_correlation.jpeg",
-                   plot = fig_correlation_protein, ncol = 1.3, nrow = 1)
+                   plot = fig_correlation_protein, ncol = 1.3*scale_val, nrow = 1*scale_val)
 
 cowplot::save_plot(filename = "../b_figures/combined_mRNA_protein_correlation.jpeg",
                    plot = combinedCorrelation, ncol = 2*1.3, nrow = 2.8*1.3)

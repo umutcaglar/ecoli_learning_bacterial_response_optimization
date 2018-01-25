@@ -43,7 +43,7 @@ source("../a_code_dataPreperation_RNA&Protein/data_filter_normalization_function
 saveFiles=TRUE
 runDeSeqForDifExp=FALSE
 # The data filtering function that controls sub functions.
-mainData=filter_data(dataType = "protein", 
+mainData=filter_data(dataType = "mrna", 
                      # can be "rna", "mrna", "protein", "protein_wo_NA", 
                      # "int_mrna_protein", "int_mrna", "int_protein"
                      badDataSet = "set00", # can be "set00",set01","set02", "set03"
