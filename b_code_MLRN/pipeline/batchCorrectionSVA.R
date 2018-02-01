@@ -24,11 +24,11 @@ batchCorrectSva <- function(trainDataFrame_, meta_df_Train_, testDataFrame_, dat
   }
   trainSv = resultTry
   ###*****************************
-  
-  fsvaobj = fsva(dbdat = as.matrix(trainDataFrame_),
-                 mod = trainMod, sv = trainSv,
-                 newdat = as.matrix(testDataFrame_),
-                 method = "exact")
+
+  fsvaobj = sva::fsva(dbdat = as.matrix(trainDataFrame_),
+                      mod = trainMod, sv = trainSv,
+                      newdat = as.matrix(testDataFrame_),
+                      method = "exact")
   
   trainDataFrameCorr<-as.data.frame(fsvaobj$db)
   testDataFrameCorr<-as.data.frame(fsvaobj$new)
