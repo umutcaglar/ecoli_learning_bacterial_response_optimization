@@ -12,7 +12,7 @@ source("pipeline/machineLearning_subCode_initDfprep.R")
 # tempmodelsvm_list=list()
 # #******************************************
 
-
+browser()
 #******************************************
 # --MAIN LOOP-- do the parallel processing
 print(paste0("Number of pararllel workers: ", getDoParWorkers())) 
@@ -183,7 +183,6 @@ for(counter01 in 1:numRepeatsFor_TestTrainSubset_Choice)
       #             counter01, "/",numRepeatsFor_TestTrainSubset_Choice))
       costValue=linearTuneResults$costList[counter03]
       
-      browser()
       modelSVM_tune_linear<-e1071::svm(data = trainDataFrame,
                                        conditionInvestigated~.,
                                        type = type_svmChoice,
@@ -257,7 +256,7 @@ for(counter01 in 1:numRepeatsFor_TestTrainSubset_Choice)
     dplyr::mutate(performance=best_performance_linear) -> result_i_linear
   
   ###*****************************
-  
+  browser()
   
   # model 2 -> "radial"
   #print(paste0("model 2 -> radial"))

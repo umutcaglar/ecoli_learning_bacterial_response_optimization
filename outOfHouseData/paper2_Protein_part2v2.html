@@ -697,82 +697,46 @@ print(head(classWeights))</code></pre>
 <div id="learn-the-model" class="section level2">
 <h2>Learn the model</h2>
 <p>Its time to train the model</p>
-<pre class="r"><code># Learn from Dataset 1 with expanded data
-modelSVM_expanded_sigmoid1 &lt;- e1071::svm(data = dim_reduced_train_DF1 ,
-                                         conditionInvestigated~.,
-                                         type = &quot;C-classification&quot;,
-                                         kernel = &quot;sigmoid&quot;,
-                                         class.weights = weightVector,
-                                         cost=251,
-                                         gamma = 1)
-
-# Learn from Dataset 2 with expanded data
+<pre class="r"><code># Learn from Dataset 2 with expanded data
 modelSVM_expanded_sigmoid2 &lt;- e1071::svm(data = dim_reduced_train_DF2 ,
                                          conditionInvestigated~.,
                                          type = &quot;C-classification&quot;,
                                          kernel = &quot;sigmoid&quot;,
                                          class.weights = weightVector,
-                                         cost=251,
-                                         gamma = 1)
+                                         cost=2154.435,
+                                         gamma = 0.04641)
 
-# make prediction with the model (Dataset 1 expanded data)
-modelSVM_expanded_sigmoid1 %&gt;%
-  predict(.,dim_reduced_expanded_test_DF1) %&gt;%
-  data.frame(predictedValue = .)</code></pre>
-<pre><code>##                                       predictedValue
-## glucose           Base Na_Base Mg_Lactate_Stationary
-## glycerol          Base Na_Base Mg_Lactate_Stationary
-## Na_50_stress      Base Na_Base Mg_Lactate_Stationary
-## stationary        Base Na_Base Mg_Lactate_Stationary
-## late_stationary Base Na_Base Mg_Gluconate_Stationary</code></pre>
-<pre class="r"><code># make prediction with the model (Dataset 2 expanded data)
+
+# make prediction with the model (Dataset 2 expanded data)
 modelSVM_expanded_sigmoid2 %&gt;%
   predict(.,dim_reduced_expanded_test_DF2) %&gt;%
   data.frame(predictedValue = .)</code></pre>
-<pre><code>##                                        predictedValue
-## glucose         Base Na_Base Mg_Gluconate_Exponential
-## glycerol           Base Na_Base Mg_Lactate_Stationary
-## Na_50_stress       Base Na_Base Mg_Lactate_Stationary
-## stationary         Base Na_Base Mg_Lactate_Stationary
-## late_stationary    Base Na_Base Mg_Lactate_Stationary</code></pre>
-<pre class="r"><code># Learn from Dataset 1 with shrunken data
-modelSVM_shrunken_sigmoid1 &lt;- e1071::svm(data = dim_reduced_shrunken_train_DF1,
-                                         conditionInvestigated~.,
-                                         type = &quot;C-classification&quot;,
-                                         kernel = &quot;sigmoid&quot;,
-                                         class.weights = weightVector,
-                                         cost=251,
-                                         gamma = 1)
-
-# Learn from Dataset 2 with shrunken data
+<pre><code>##                                      predictedValue
+## glucose         Base Na_High Mg_Glucose_Exponential
+## glycerol        Base Na_High Mg_Glucose_Exponential
+## Na_50_stress    Base Na_High Mg_Glucose_Exponential
+## stationary       Base Na_Base Mg_Glucose_Stationary
+## late_stationary  Base Na_Base Mg_Glucose_Stationary</code></pre>
+<pre class="r"><code># Learn from Dataset 2 with shrunken data
 modelSVM_shrunken_sigmoid2 &lt;- e1071::svm(data = dim_reduced_shrunken_train_DF2,
                                          conditionInvestigated~.,
                                          type = &quot;C-classification&quot;,
                                          kernel = &quot;sigmoid&quot;,
                                          class.weights = weightVector,
-                                         cost=251,
-                                         gamma = 1)
+                                         cost=2154.435,
+                                         gamma = 0.04641)
 
-# make prediction with the model (Dataset1 shrunken data)
-modelSVM_shrunken_sigmoid1 %&gt;%
-  predict(.,dim_reduced_test_DF1) %&gt;%
-  data.frame(predictedValue = .)</code></pre>
-<pre><code>##                                      predictedValue
-## glucose          High Na_Base Mg_Glucose_Stationary
-## glycerol        High Na_Base Mg_Glucose_Exponential
-## Na_50_stress     High Na_Base Mg_Glucose_Stationary
-## stationary      High Na_Base Mg_Glucose_Exponential
-## late_stationary High Na_Base Mg_Glucose_Exponential</code></pre>
-<pre class="r"><code># make prediction with the model (Dataset2 shrunken data)
+
+# make prediction with the model (Dataset2 shrunken data)
 modelSVM_shrunken_sigmoid2 %&gt;%
   predict(.,dim_reduced_test_DF2) %&gt;%
   data.frame(predictedValue = .)</code></pre>
-<pre><code>##                                        predictedValue
-## glucose         Base Na_Base Mg_Gluconate_Exponential
-## glycerol        Base Na_Base Mg_Gluconate_Exponential
-## Na_50_stress       High Na_Base Mg_Glucose_Stationary
-## stationary         Base Na_Base Mg_Glucose_Stationary
-## late_stationary    Base Na_Base Mg_Glucose_Stationary</code></pre>
+<pre><code>##                                     predictedValue
+## glucose         Base Na_Base Mg_Lactate_Stationary
+## glycerol        Base Na_Base Mg_Lactate_Stationary
+## Na_50_stress    High Na_Base Mg_Glucose_Stationary
+## stationary      Base Na_Base Mg_Lactate_Stationary
+## late_stationary Base Na_Base Mg_Lactate_Stationary</code></pre>
 </div>
 
 

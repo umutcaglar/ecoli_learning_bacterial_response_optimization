@@ -106,7 +106,7 @@ dimensionChoiceValue <- metaRunParameters$dimensionChoiceValue
 #combined_runs_df[seq(1,10000),] -> combined_runs_df 
 ###*****************************
 
-
+browser()
 ###*****************************
 # The function
 f1_score_list <- foreach(counter01 = 1 : ProcCount) %dopar%
@@ -199,7 +199,7 @@ browser()
 object.size(combined_runs_df)
 object.size(f1_score_list)
 
-f1_score_df
+f1_score_df = c()
 for(counter01 in 1: ProcCount)
 {
   f1_score_df_sub <- f1_score_list[[counter01]]
@@ -214,24 +214,34 @@ for(counter01 in 1: ProcCount)
 }
 
 
+f1_score_df %>% 
+  dplyr::left_join(combined_runs_df, .) -> combined_runs_df
+
 #******************************************
 # Save the data
-save(list = c("f1_score_df"), 
+save(list = c("combined_runs_df"), 
      file = paste0("pipeline_data/f1_", analyzeName,"_part3.RDA"),
      compression_level = 9, compress = "xz")
 
-#load(file = paste0("pipeline_data/f1_", analyzeName,"_part3.RDA"))
+load(file = paste0("pipeline_data/f1_", analyzeName,"_part3.RDA"))
 #******************************************
 
 
-f1_score_df %>% 
-  dplyr::left_join(combined_runs_df, .) -> q
-
-q %>% 
-  group_by(model,
+combined_runs_df %>% 
+  group_by(model, TestTrainSubsetNo,
            linear_cost, 
            radial_cost, radial_gamma, 
            sigmoid_cost, sigmoid_gamma, 
            ntree, nodesize, mtry) %>% 
   dplyr::summarise(f1_mean = mean(f1_score_list), f1_sd = sd(f1_score_list)) %>% 
-  dplyr::arrange(desc(f1_mean)) -> q2
+  group_by(model,
+           linear_cost, 
+           radial_cost, radial_gamma, 
+           sigmoid_cost, sigmoid_gamma, 
+           ntree, nodesize, mtry) %>% 
+  dplyr::summarise(f1_mean_median = median(f1_mean)) %>% 
+  dplyr::group_by()%>%
+  dplyr::arrange(desc(f1_mean_median)) %>% 
+  dplyr::mutate(order = seq(1:n()))-> q2
+
+q2 %>% dplyr::filter(model == "sigmoid") -> q3

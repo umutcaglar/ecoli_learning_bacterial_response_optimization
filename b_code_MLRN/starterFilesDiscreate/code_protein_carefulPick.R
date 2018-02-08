@@ -161,15 +161,15 @@ samplingValue="cross"
 # SVM parameters (linear kerel)
 
 # Linear
-linear_range_cost_power = seq(from = -2, to = 8, by = 0.5)
+linear_range_cost_power = seq(from = -2, to = 8, by = 0.2)
 
 # Radial
-radial_range_cost_power = seq(from = -1, to = 8, by = 0.5)
-radial_range_gamma_power = seq(from = -6, to = 2, by = 0.5)
+radial_range_cost_power = seq(from = -1, to = 8, by = 0.2)
+radial_range_gamma_power = seq(from = -6, to = 2, by = 0.2)
 
 # Sigmoid
-sigmoid_range_cost_power = seq(from = -1, to = 8, by = 0.5)
-sigmoid_range_gamma_power = seq(from = -4, to = 2, by = 0.5)
+sigmoid_range_cost_power = seq(from = -1, to = 8, by = 0.2)  # seq(from = -1, to = 8, by = 0.2)
+sigmoid_range_gamma_power = seq(from = -4, to = 2, by = 0.2)  # seq(from = -4, to = 2, by = 0.2)
 
 # SVM Kernel Vector (i feel unnecessary) 
 kernel_list=c("linear","radial","sigmoid") # kernel vector

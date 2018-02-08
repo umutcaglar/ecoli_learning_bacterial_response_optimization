@@ -60,7 +60,7 @@ if(exists(x = "part1_flag"))
 # ARRANGE BACKENDS
 ## use the multicore library
 # a.
-ProcCount <- 8 # registers specified number of workers  or
+ProcCount <- 6 # registers specified number of workers  or
 registerDoMC(ProcCount) # Or, reserve all all available cores
 # b.
 #registerDoMC()  # Automatically assign cores
@@ -225,7 +225,7 @@ save(list = c("parallel_Result"),
      compression_level = 9, compress = "xz")
 ###*****************************####
 
-
+browser()
 ###*****************************####
 #generate part2 flag
 part2_flag = 1

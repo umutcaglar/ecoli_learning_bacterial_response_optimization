@@ -88,7 +88,7 @@ for(counter01 in 1 : numRepeatsFor_TestTrainSubset_Choice)
 }
 ###*****************************####
 
-
+browser()
 ###*****************************####
 # Save files
 # write.csv(x = combined_runs_df, file = paste0("pipeline_data/runlist_", analyzeName, "_part1.csv"))
@@ -98,7 +98,7 @@ save(list = c("metaRunParameters","combined_runs_df", "mainDataFrame", "meta_df_
      file = paste0("pipeline_data/runlist_", analyzeName, "_part1.RDA"), 
      compression_level = 9, compress = "xz")
 ###*****************************####
-
+browser()
 
 ###*****************************####
 #generate part1 flag
