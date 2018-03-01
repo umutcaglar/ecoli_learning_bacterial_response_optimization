@@ -60,5 +60,7 @@ performance_df %>%
 
 ###*****************************
 # the new results
+load(file = paste0("../pipeline_data/data_list_protein_part2.RDA"))
+load(file = paste0("../pipeline_data/f1_protein_part3.RDA"))
 ###*****************************
 

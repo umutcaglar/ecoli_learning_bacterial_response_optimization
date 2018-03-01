@@ -398,8 +398,8 @@ modelSVM_expanded_sigmoid1 <- e1071::svm(data = dim_reduced_train_DF1 ,
                                          type = "C-classification",
                                          kernel = "sigmoid",
                                          class.weights = weightVector,
-                                         cost=3162.2777,
-                                         gamma = 0.06812921)
+                                         cost=251,
+                                         gamma = 1)
 
 # Learn from Dataset 2 with expanded data
 modelSVM_expanded_sigmoid2 <- e1071::svm(data = dim_reduced_train_DF2 ,
@@ -407,8 +407,8 @@ modelSVM_expanded_sigmoid2 <- e1071::svm(data = dim_reduced_train_DF2 ,
                                          type = "C-classification",
                                          kernel = "sigmoid",
                                          class.weights = weightVector,
-                                         cost=3162.2777,
-                                         gamma = 0.06812921)
+                                         cost=251,
+                                         gamma = 1)
 
 # make prediction with the model (Dataset 1 expanded data)
 modelSVM_expanded_sigmoid1 %>%
@@ -430,7 +430,7 @@ modelSVM_shrunken_sigmoid1 <- e1071::svm(data = dim_reduced_shrunken_train_DF1,
                                          type = "C-classification",
                                          kernel = "sigmoid",
                                          class.weights = weightVector,
-                                         cost=120,
+                                         cost=251,
                                          gamma = 1)
 
 # Learn from Dataset 2 with shrunken data
@@ -439,8 +439,8 @@ modelSVM_shrunken_sigmoid2 <- e1071::svm(data = dim_reduced_shrunken_train_DF2,
                                          type = "C-classification",
                                          kernel = "sigmoid",
                                          class.weights = weightVector,
-                                         cost=150,
-                                         gamma = 10)
+                                         cost=251,
+                                         gamma = 1)
 
 # make prediction with the model (Dataset1 shrunken data)
 modelSVM_shrunken_sigmoid1 %>%
