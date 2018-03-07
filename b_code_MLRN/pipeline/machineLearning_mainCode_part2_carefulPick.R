@@ -131,29 +131,31 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
     mainDataFrame[,as.vector(meta_df_Tune$dataSet)] -> tuneDataFrame
     mainDataFrame[,as.vector(meta_df_Test$dataSet)] -> testDataFrame
     
-    # temproralily stick tune and test
-    tunetestDataFrame <- bind_cols(tuneDataFrame, testDataFrame)
-    row.names(tunetestDataFrame) <- rownames(tuneDataFrame)
-    meta_df_TuneTest <- bind_rows(meta_df_Tune, meta_df_Test)
+    # temproralily stick train and tune
+    traintuneDataFrame <- bind_cols(trainDataFrame, tuneDataFrame)
+    row.names(traintuneDataFrame) <- rownames(tuneDataFrame)
+    meta_df_TrainTune <- bind_rows(meta_df_Train, meta_df_Tune)
     
     # insert data preperation function. (Reduces dimension PCA , fSVA - batch correction)
-    dim_reduced_DF_obj<-dataPrepearningFunction(meta_df_Train = meta_df_Train,
-                                                meta_df_Test = meta_df_TuneTest,
-                                                trainDataFrame = trainDataFrame,
-                                                testDataFrame = tunetestDataFrame,
-                                                dataNameDF = dataNameDF,
-                                                dimReductionType = dimReductionType)
+    dim_reduced_DF_obj <- dataPrepearningFunction(meta_df_Train = meta_df_TrainTune,
+                                                  meta_df_Test = meta_df_Test,
+                                                  trainDataFrame = traintuneDataFrame,
+                                                  testDataFrame = testDataFrame,
+                                                  dimReductionType = dimReductionType)
     
-    dim_reduced_DF_obj$dim_reduced_train_DF -> dim_reduced_train_DF
+    dim_reduced_DF_obj$dim_reduced_train_DF -> dim_reduced_traintune_DF
     
-    dim_reduced_DF_obj$dim_reduced_test_DF %>%
-      tibble::rownames_to_column(var = "row_names") -> dim_reduced_tunetest_DF
-    dim_reduced_tunetest_DF %>%
+    dim_reduced_traintune_DF %>%
+      tibble::rownames_to_column(var = "row_names") %>%
+      dplyr::filter(row_names %in% as.vector(meta_df_Train$dataSet)) %>%
+      tibble::column_to_rownames(var = "row_names")-> dim_reduced_train_DF
+    dim_reduced_traintune_DF %>%
+      tibble::rownames_to_column(var = "row_names") %>%
       dplyr::filter(row_names %in% as.vector(meta_df_Tune$dataSet)) %>%
       tibble::column_to_rownames(var = "row_names")-> dim_reduced_tune_DF
-    dim_reduced_tunetest_DF %>%
-      dplyr::filter(row_names %in% as.vector(meta_df_Test$dataSet)) %>%
-      tibble::column_to_rownames(var = "row_names")-> dim_reduced_test_DF
+    
+    dim_reduced_DF_obj$dim_reduced_test_DF %>%
+      tibble::rownames_to_column(var = "row_names") -> dim_reduced_test_DF
     
     dimensionChoice = dim_reduced_DF_obj$dimensionChoice
     
@@ -181,7 +183,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
   dim_reduced_test_DF_list[[counter01]] = dim_reduced_test_DF_sublist
   dimensionChoice_list[[counter01]] = dimensionChoice_sublist
   weight_vector_list[[counter01]] = weight_vector_sublist
-
+  
   
   remove(list = c("dim_reduced_train_DF_sublist", 
                   "dim_reduced_tune_DF_sublist", 
@@ -198,7 +200,7 @@ parallel_Result <- foreach(counter01=1:numRepeatsFor_TestTrainSubset_Choice) %do
        weight_vector_list = weight_vector_list)
 }
 
-browser()
+#browser()
 
 for(counter01 in 1: numRepeatsFor_TestTrainSubset_Choice)
 {
@@ -225,7 +227,7 @@ save(list = c("parallel_Result"),
      compression_level = 9, compress = "xz")
 ###*****************************####
 
-browser()
+# browser()
 ###*****************************####
 #generate part2 flag
 part2_flag = 1

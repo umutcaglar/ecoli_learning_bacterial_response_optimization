@@ -73,8 +73,8 @@ registerDoMC(ProcCount) # Or, reserve all all available cores
 
 getDoParWorkers() # check how many cores (workers) are registered
 
-combined_runs_df$par_work <- rep(x = seq(1:ProcCount), 
-                                 length.out = nrow(combined_runs_df))
+# combined_runs_df$par_work <- rep(x = seq(1:ProcCount), 
+#                                  length.out = nrow(combined_runs_df))
 #********************************************
 
 
@@ -106,7 +106,7 @@ dimensionChoiceValue <- metaRunParameters$dimensionChoiceValue
 #combined_runs_df[seq(1,10000),] -> combined_runs_df 
 ###*****************************
 
-browser()
+# browser()
 ###*****************************
 # The function
 f1_score_list <- foreach(counter01 = 1 : ProcCount) %dopar%
@@ -194,7 +194,7 @@ f1_score_list <- foreach(counter01 = 1 : ProcCount) %dopar%
                           f1_score_list = f1_score_list_)
 }
 ###*****************************
-browser()
+# browser()
 
 object.size(combined_runs_df)
 object.size(f1_score_list)

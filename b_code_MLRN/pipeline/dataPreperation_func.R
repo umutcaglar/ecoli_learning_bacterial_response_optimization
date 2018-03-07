@@ -1,5 +1,5 @@
 dataPrepearningFunction<-function(meta_df_Train, meta_df_Test, trainDataFrame, testDataFrame, 
-                                  dataNameDF, dimReductionType)
+                                  dimReductionType)
 {
   ###*****************************
   # Preperation of Data for PCA and PCoA
@@ -10,10 +10,9 @@ dataPrepearningFunction<-function(meta_df_Train, meta_df_Test, trainDataFrame, t
   
   
   # 1. correcting batch effects
-  batchCorrDFs=batchCorrectSva(trainDataFrame_ = trainDataFrame,
+  batchCorrDFs = batchCorrectSva(trainDataFrame_ = trainDataFrame,
                                meta_df_Train_ = meta_df_Train,
-                               testDataFrame_ = testDataFrame,
-                               dataNameDF_ = dataNameDF)
+                               testDataFrame_ = testDataFrame)
   
   trainDataFrame = batchCorrDFs$trainDataFrame
   testDataFrame = batchCorrDFs$testDataFrame
