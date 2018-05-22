@@ -72,8 +72,11 @@ winnerModels%>%
 # winnerModels$experiment <- factor(winnerModels$experiment,
 #                                   levels = c("int_mRNA", "int_protein", "int_mRNA_protein"))
 #
-# winnerModels$model <- factor(winnerModels$model,
-#                              levels = c("radial", "sigmoid", "linear", "RF"))
+ winnerModels$model <- factor(winnerModels$model,
+                              levels = c("radial", "sigmoid", "linear", "RF"))
+ 
+ winnerModelsSummary$model <- factor(winnerModelsSummary$model,
+                              levels = c("radial", "sigmoid", "linear", "RF"))
 ###*****************************
 
 
@@ -93,7 +96,7 @@ print(fig01)
 ###*****************************
 # Save figure
 cowplot::save_plot(filename = "../b_figures/changePerformanceExpSta_testAll.pdf", 
-                   plot = fig01, ncol = 2, nrow = 1.3)
+                   plot = fig01, ncol = 2*0.8, nrow = 1.3*0.8)
 cowplot::save_plot(filename = "../b_figures/changePerformanceExpSta_testAll_ppt.pdf", 
                    plot = fig01, ncol = 2, nrow = 1.4)
 ###*****************************

@@ -57,10 +57,10 @@ winnerModels<-dplyr::bind_rows(winnerModels_int_mrna,
 
 winnerModels$analyzeName <- replace_fun(input_vector = winnerModels$analyzeName, 
                                         initialVal = c("int_mRNA", "int_protein", "int_mRNA_protein"), 
-                                        finalVal = c("int mRNA", "int protein", "int mRNA protein"))
+                                        finalVal = c("Intersection mRNA", "Intersection protein", "Combined"))
 
 winnerModels$analyzeName <- factor(winnerModels$analyzeName,
-                                   levels = c("int mRNA", "int protein", "int mRNA protein"))
+                                   levels = c("Intersection mRNA", "Intersection protein", "Combined"))
 
 winnerModels$model <- factor(winnerModels$model,
                              levels = c("radial", "sigmoid", "linear", "RF"))
@@ -101,15 +101,15 @@ for(counter01 in 1: length(modelVector))
     dplyr::filter(model==modelVector[counter01])->winnerModelSub
   
   winnerModelSub %>%
-    dplyr::filter(analyzeName=="int_mRNA") %>%
+    dplyr::filter(analyzeName=="Intersection mRNA") %>%
     .$performance_test->v_mrna
   
   winnerModelSub %>%
-    dplyr::filter(analyzeName=="int_protein") %>%
+    dplyr::filter(analyzeName=="Intersection protein") %>%
     .$performance_test->v_protein
   
   winnerModelSub %>%
-    dplyr::filter(analyzeName=="int_mRNA_protein") %>%
+    dplyr::filter(analyzeName=="Combined") %>%
     .$performance_test->v_mRNA_protein
   
   VmrnaVSprotein=c(model=modelVector[counter01],
