@@ -15,8 +15,8 @@ set.seed(14159)
 ###*****************************
 # Set Working Directory
 # One needs to arrange the correct pathway if this is not umut's computer ;)
-if(as.vector(Sys.info()["effective_user"]=="umut"))
-{setwd(paste0("/Users/umut/GitHub/ecoli_learning_bacterial_response/text/figures/figrue_preperation/"))} # mac computersldk
+ if(as.vector(Sys.info()["effective_user"]=="umut"))
+ {setwd(paste0("/Users/umut/GitHub/ecoli_learning_bacterial_response/text/figures/figrue_preperation/"))} # mac computersldk
 ###*****************************
 
 
