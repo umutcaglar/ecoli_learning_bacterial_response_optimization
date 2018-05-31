@@ -499,12 +499,12 @@ winnerModelResults_numMistake %>%
   dplyr::group_by(correct_prediction) %>%
   dplyr::summarise(added_percentiles = sum(percentPrediction)) -> winnerModelResults_numMistakeSum
 
-ggplot(winnerModelResults_numMistakeSum, aes(x= 4-correct_prediction, y = added_percentiles/1600))+
+ggplot(winnerModelResults_numMistakeSum, aes(x= 4-correct_prediction, y = added_percentiles/16))+
   geom_bar(stat="identity")+
   # scale_x_reverse()+
-  scale_y_continuous(expand = c(0,0), limits = c(0,1))+
-  xlab("the number of mispredicted labels")+
-  ylab("percent of predictions")-> fig_error_dist
+  scale_y_continuous(expand = c(0,0), limits = c(0,100))+
+  xlab("Number of mispredicted labels")+
+  ylab("Percent of predictions")-> fig_error_dist
 
 fig_error_dist
 
@@ -514,7 +514,6 @@ winnerModelResults_numMistake %>% dplyr::filter(correct_prediction == 3) %>%
                    test3_sum=sum(-(test3-1)*percentPrediction), 
                    test4_sum=sum(-(test4-1)*percentPrediction))
 
-browser()
 
 
 
@@ -587,7 +586,7 @@ fig06<-ggplot(tidyDF, aes( y=axis2, x=condition))+
   theme(legend.position="bottom",
         legend.key.size= unit(.6,"cm"))
 print(fig06)
-browser()
+#browser()
 
 
 # Combine Figures

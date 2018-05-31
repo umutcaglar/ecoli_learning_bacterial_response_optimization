@@ -86,7 +86,7 @@ fig01<-ggplot(winnerModels, aes(x=model, y=performance_test, group=model))+
   geom_violin(aes(fill=model, color=model))+
   geom_point(aes(x=model, y=meanPerformance_test))+
   theme_bw(base_size=20)+
-  xlab("Model") + ylab("Multi-clas macro F1 score")+
+  xlab("Model") + ylab("Multi-class macro F1 score on test data")+
   theme(axis.text.x = element_text(angle=45, hjust=1))
 
 print(fig01)

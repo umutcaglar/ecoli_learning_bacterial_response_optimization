@@ -32,6 +32,8 @@ fig_error_cobined <- plot_grid(p1, p2, labels = "AUTO", ncol=2)
 cowplot::save_plot(filename = "../b_figures/combined_correct_prediction.pdf", 
                    plot = fig_error_cobined, ncol = 2, nrow = 1, dpi= 600)
 
+print(fig_error_cobined)
+
 
 # for generating this figure
 
