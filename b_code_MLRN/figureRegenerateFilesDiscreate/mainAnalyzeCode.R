@@ -499,12 +499,12 @@ winnerModelResults_numMistake %>%
   dplyr::group_by(correct_prediction) %>%
   dplyr::summarise(added_percentiles = sum(percentPrediction)) -> winnerModelResults_numMistakeSum
 
-ggplot(winnerModelResults_numMistakeSum, aes(x= correct_prediction, y = added_percentiles))+
+ggplot(winnerModelResults_numMistakeSum, aes(x= 4-correct_prediction, y = added_percentiles/1600))+
   geom_bar(stat="identity")+
-  scale_x_reverse()+
-  scale_y_continuous(expand = c(0,0), limits = c(0,1000))+
-  xlab("number of correct predictions")+
-  ylab("sum of percentiles")-> fig_error_dist
+  # scale_x_reverse()+
+  scale_y_continuous(expand = c(0,0), limits = c(0,1))+
+  xlab("the number of mispredicted labels")+
+  ylab("percent of predictions")-> fig_error_dist
 
 fig_error_dist
 
@@ -678,7 +678,7 @@ if(!doNotSave==1)
                      ncol = 1.4, nrow=1.2)
   
   # Save bar graphs related with errors
-  cowplot::save_plot(filename = paste0("../b_figures/","fig_corrext_prediction_",analyzeName,".pdf"), 
+  cowplot::save_plot(filename = paste0("../b_figures/","fig_correct_prediction_",analyzeName,".pdf"), 
                      plot = fig_error_dist, ncol=1, nrow=1, dpi=600)
   
   # Save Figure Object

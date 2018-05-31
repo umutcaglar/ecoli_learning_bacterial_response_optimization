@@ -29,6 +29,7 @@ require("tidyr")
 # Graphing
 require("ggplot2")
 require("cowplot")
+require("ggrepel")
 require("gtable") # for the "gtable_filter" function to seperately save the legend
 require("grid") # For manipulating ggplot obj
 
@@ -50,14 +51,14 @@ sourceCpp("pipeline/f1ScoreFunction.cpp")
 ###*****************************
 # Parameters
 analyzeName="int_mRNA_protein"
-pick_data="int_mrna_protein"
+pick_data_="int_mrna_protein"
 growthPhase="ExpAllPhase"
 testConditions=c("Na_mM_Levels","Mg_mM_Levels","carbonSource","growthPhase")
-ndivisionCost=55
-ndivisionGamma=31
+ndivisionCost_=55
+ndivisionGamma_=31
 numRepeatsFor_TestTrainSubset_Choice=60
 doNotSave=0 # save the square table figures. 1 means DO NOT save
-costFunction="F1_final"
+costFunction_="F1_final"
 
 testConditionsCombined=paste0(testConditions,collapse = "_")
 ###*****************************
@@ -67,13 +68,13 @@ testConditionsCombined=paste0(testConditions,collapse = "_")
 # read the list to find file name
 timeStampFile<-read.csv(file = paste0("../b_results/","parametersModelFitMetafile",".csv")) #import file
 timeStampFile %>%
-  dplyr::filter(pick_data==get("pick_data")) %>%
+  dplyr::filter(pick_data==get("pick_data_")) %>%
   dplyr::filter(growthPhase_names==get("growthPhase")) %>%
   dplyr::filter(numRepeatsFor_TestTrainSubset_Choice==get("numRepeatsFor_TestTrainSubset_Choice")) %>%
-  dplyr::filter(ndivisionCost==get("ndivisionCost")) %>%
-  dplyr::filter(ndivisionGamma==get("ndivisionGamma")) %>%
+  dplyr::filter(ndivisionCost==get("ndivisionCost_")) %>%
+  dplyr::filter(ndivisionGamma==get("ndivisionGamma_")) %>%
   dplyr::filter(testConditions==get("testConditionsCombined"))%>%
-  dplyr::filter(costFunction==get("costFunction"))->chosenDataSetInfo
+  dplyr::filter(costFunction==get("costFunction_"))->chosenDataSetInfo
 
 #chosenDataSetInfo <- chosenDataSetInfo[2,]
 

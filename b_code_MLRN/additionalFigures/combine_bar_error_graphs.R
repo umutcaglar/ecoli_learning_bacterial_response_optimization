@@ -26,8 +26,14 @@ require(tidyverse)
 require(cowplot)
 ###*****************************
 
-p1 <- ggdraw() + draw_image("../b_figures/fig_corrext_prediction_mRNA.pdf", scale = 1)
-p2 <- ggdraw() + draw_image("../b_figures/fig_corrext_prediction_protein.pdf", scale = 1)
+p1 <- ggdraw() + draw_image("../b_figures/fig_correct_prediction_mRNA.pdf", scale = 1)
+p2 <- ggdraw() + draw_image("../b_figures/fig_correct_prediction_protein.pdf", scale = 1)
 fig_error_cobined <- plot_grid(p1, p2, labels = "AUTO", ncol=2)
-cowplot::save_plot(filename = "../b_figures/combined_corrext_prediction.pdf", 
-                   plot = fig_error_cobined, ncol = 2, nrow = 1, dpi=600)
+cowplot::save_plot(filename = "../b_figures/combined_correct_prediction.pdf", 
+                   plot = fig_error_cobined, ncol = 2, nrow = 1, dpi= 600)
+
+
+# for generating this figure
+
+# Run mRNA_analyze,.R and protein_analyze.R they will call mainAnalyzeCode.R (The figures will be generated there)
+# then they are exported. This code call those 2 figures and combine them.
