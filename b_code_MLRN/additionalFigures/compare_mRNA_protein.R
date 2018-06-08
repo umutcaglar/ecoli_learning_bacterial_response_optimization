@@ -134,6 +134,8 @@ cowplot::save_plot(filename = "../b_figures/mRNA_correlation.jpeg",
 cowplot::save_plot(filename = "../b_figures/protein_correlation.jpeg",
                    plot = fig_correlation_protein, ncol = 1.3*scale_val, nrow = 1*scale_val)
 
+cowplot::save_plot(filename = "../b_figures/combined_mRNA_protein_correlation.pdf",
+                   plot = combinedCorrelation, ncol = 2*1.3, nrow = 2.8*1.3)
 cowplot::save_plot(filename = "../b_figures/combined_mRNA_protein_correlation.jpeg",
                    plot = combinedCorrelation, ncol = 2*1.3, nrow = 2.8*1.3)
 ###*****************************

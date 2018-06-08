@@ -317,6 +317,8 @@ combinedParameters<-cowplot::ggdraw() +
 
 print(combinedParameters)
 
+cowplot::save_plot(filename = paste0("../b_figures/","combinedParameters_",analyzeName,".pdf"),
+                   plot = combinedParameters, ncol = 3, nrow = 2)
 cowplot::save_plot(filename = paste0("../b_figures/","combinedParameters_",analyzeName,".jpeg"),
                    plot = combinedParameters, ncol = 3, nrow = 2)
 ###*****************************
