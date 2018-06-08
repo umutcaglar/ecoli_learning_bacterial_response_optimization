@@ -35,7 +35,7 @@ require("scales") # Utilities for scales and formatting
 
 ###*****************************
 #Load Functions
-source("../../../b_code_MLRN/dataChoiceFunctionSingle.R")
+source("../../../b_code_MLRN_svm/dataChoiceFunctionSingle.R")
 source("../../../a_code_dataPreperation_RNA&Protein/data_naming_functions.R")
 source("../../../a_code_dataPreperation_RNA&Protein/replace_fun.R")
 ###*****************************

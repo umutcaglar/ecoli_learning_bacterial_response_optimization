@@ -85,6 +85,8 @@ print(fig01)
 # Save figure
 cowplot::save_plot(filename = "../b_figures/increasePerformanceAfterCombine_testAll.pdf", 
                    plot = fig01, ncol = 2, nrow = 1.3)
+cowplot::save_plot(filename = "../b_figures/increasePerformanceAfterCombine_testAll.jpg", 
+                   plot = fig01, ncol = 2, nrow = 1.3)
 cowplot::save_plot(filename = "../b_figures/increasePerformanceAfterCombine_testAll_ppt.pdf", 
                    plot = fig01, ncol = 2, nrow = 1.4)
 ###*****************************

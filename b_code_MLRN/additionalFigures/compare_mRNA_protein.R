@@ -101,7 +101,7 @@ figComb_wL_protein<-figComb_wL
 combinedSquarePlots<-cowplot::ggdraw() +
   cowplot::draw_plot(plot=figComb_mrna, x = 0, y = 6/11, width = 1, height = 5/11) +
   cowplot::draw_plot(plot=figComb_protein, x = 0, y = 1/11, width = 1, height = 5/11) +
-  cowplot::draw_plot(plot=color_legend, x = 0, y = 0, width = 1, height = 1/11) +
+  cowplot::draw_plot(plot=color_legend, x = .1, y = 0, width = 1, height = 1/11) +
   cowplot::draw_plot_label(c("A", "", "B"), c(0, 0, 0), c(1, 1/11, 6/11), size = 15)
 
 print(combinedSquarePlots)
@@ -111,6 +111,8 @@ print(combinedSquarePlots)
 ###*****************************
 # Save figure
 cowplot::save_plot(filename = "../b_figures/combined_mRNA_protein_square.jpeg",
+                   plot = combinedSquarePlots, ncol = 2, nrow = 2.8)
+cowplot::save_plot(filename = "../b_figures/combined_mRNA_protein_square.pdf",
                    plot = combinedSquarePlots, ncol = 2, nrow = 2.8)
 ###*****************************
 

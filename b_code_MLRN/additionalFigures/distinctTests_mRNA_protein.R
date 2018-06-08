@@ -106,6 +106,8 @@ print(fig01)
 # Save figure
 cowplot::save_plot(filename = "../b_figures/distinctTests_mRNA_Protein.pdf", 
                    plot = fig01, ncol = 3, nrow = 2.3)
+cowplot::save_plot(filename = "../b_figures/distinctTests_mRNA_Protein.jpeg", 
+                   plot = fig01, ncol = 3, nrow = 2.3)
 
 cowplot::save_plot(filename = "../b_figures/distinctTests_mRNA_Protein_ppt.pdf", 
                    plot = fig01, ncol = 3, nrow = 1.4*3/2)
