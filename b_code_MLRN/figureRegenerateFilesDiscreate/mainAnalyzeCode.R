@@ -185,6 +185,7 @@ fig01<-ggplot(result_List_sum, aes(x=model, y=performance, group=model))+
 
 print(fig01)
 
+browser()
 write.csv(x = result_List_sum, file = paste0("../b_results/","model_performance_",analyzeName,".csv"))
 
 result_List_sum%>%
