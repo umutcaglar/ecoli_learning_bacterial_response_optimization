@@ -1,4 +1,3 @@
-# ecoli_learning_bacterial_response_optimization
 This repository contains code and data related to the following manuscript:
 
 >**Predicting bacterial growth conditions from mRNA and protein abundances**  
